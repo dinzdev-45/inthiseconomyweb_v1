@@ -83,7 +83,9 @@ jobs:
       - name: OpenSpec scenario coverage
         run: >-
           pnpm spec:coverage
-          initial-platform
+          specs/admin-access-control
+          specs/admin-authentication
+          specs/api-conventions
           specs/storefront-homepage
           specs/storefront-navigation
           specs/catalog-reference-data

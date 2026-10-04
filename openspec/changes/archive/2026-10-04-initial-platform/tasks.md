@@ -63,7 +63,9 @@
 
 ## 9. CI and verification
 
-- [ ] 9.1 Add the GitHub Actions workflow (install → lint → typecheck → unit → integration with a Postgres service → Prisma migrate check → build → Playwright smoke); verify a PR run is green
-- [ ] 9.2 Write the Playwright smoke test: bootstrap Owner → login → forced password change → create ADMIN → ADMIN signs in, changes password, and is denied the staff page; verify it passes in CI
+- [x] 9.1 Add the GitHub Actions workflow (install → lint → typecheck → unit → integration with a Postgres service → Prisma migrate check → build → Playwright smoke); verify a PR run is green
+  - Recorded 2026-10-04: first GitHub Actions run green — run 37192231681 (`push` to `main`, commit `dbf119d`, identical to the working tree): install, lint, typecheck, unit and integration tests, Prisma migration check, build, OpenSpec scenario coverage, admin E2E, and storefront E2E all succeeded. The workflow also runs on pull requests; this first run was a push.
+- [x] 9.2 Write the Playwright smoke test: bootstrap Owner → login → forced password change → create ADMIN → ADMIN signs in, changes password, and is denied the staff page; verify it passes in CI
+  - Recorded 2026-10-04: the admin E2E smoke step passed in run 37192231681.
 - [x] 9.3 Add a spec-coverage script that checks every `#### Scenario:` in this change's specs has a test with a matching name; verify it reports zero missing scenarios
 - [x] 9.4 Write `README.md` (prerequisites, Docker Postgres, env setup, scripts, bootstrap) and fill `openspec/config.yaml` project context (stack, conventions, deferred `admin-security-hardening` items); verify a fresh clone can follow the README to a logged-in admin
