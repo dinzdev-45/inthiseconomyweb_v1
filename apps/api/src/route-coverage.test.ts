@@ -63,6 +63,8 @@ const EXPECTED: Record<string, AdminRouteRecord['permission']> = {
   'PATCH /api/v1/admin/products/:id/images/:imageId': 'catalog:manage',
   'DELETE /api/v1/admin/products/:id/images/:imageId': 'catalog:manage',
   'PUT /api/v1/admin/products/:id/images/order': 'catalog:manage',
+  'GET /api/v1/admin/catalog/settings': 'catalog:read',
+  'HEAD /api/v1/admin/catalog/settings': 'catalog:read',
 };
 
 describe('admin route permission coverage', () => {

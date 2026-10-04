@@ -13,6 +13,7 @@ import { createAdminAuthService } from './modules/admin-auth/service.ts';
 import { createImageRepository } from './modules/catalog/images/repository.ts';
 import { imageRoutes } from './modules/catalog/images/routes.ts';
 import { createImageService } from './modules/catalog/images/service.ts';
+import { catalogSettingsRoutes } from './modules/catalog/settings/routes.ts';
 import { createProductRepository } from './modules/catalog/products/repository.ts';
 import { productRoutes } from './modules/catalog/products/routes.ts';
 import { createProductService } from './modules/catalog/products/service.ts';
@@ -122,6 +123,8 @@ export async function buildApp({
         async (admin) => admin.register(productRoutes, { products }),
         async (admin) => admin.register(variantRoutes, { variants }),
         async (admin) => admin.register(imageRoutes, { images }),
+        async (admin) =>
+          admin.register(catalogSettingsRoutes, { storeCurrency: env.STORE_CURRENCY }),
         ...(routes.admin ?? []),
       ],
     },

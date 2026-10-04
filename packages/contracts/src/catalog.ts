@@ -234,6 +234,16 @@ export const ProductVariant = z.strictObject({
 });
 export type ProductVariant = z.infer<typeof ProductVariant>;
 
+/** A product's stock at a glance, counted over its ACTIVE variants only. */
+export const ProductStockSummary = z.strictObject({
+  /** Sum of `stockQuantity` (may exceed one variant's maximum). */
+  totalQuantity: z.int().min(0),
+  activeVariantCount: z.int().min(0),
+  /** ACTIVE variants whose `stockQuantity` is 0. */
+  outOfStockVariantCount: z.int().min(0),
+});
+export type ProductStockSummary = z.infer<typeof ProductStockSummary>;
+
 export const ProductListItem = z.strictObject({
   id: Id,
   name: z.string(),
@@ -242,6 +252,8 @@ export const ProductListItem = z.strictObject({
   category: CategoryRef,
   basePrice: Price,
   variantCount: z.int().min(0),
+  /** Stock across the product's ACTIVE variants (inactive variants are not sellable). */
+  stock: ProductStockSummary,
   primaryImage: ImageRef.nullable(),
   /** First activation; null until the product has been ACTIVE once. */
   activatedAt: Timestamp.nullable(),
@@ -342,6 +354,17 @@ export const ReorderImagesRequest = z.strictObject({
     .refine((ids) => new Set(ids).size === ids.length, 'Image ids must be unique'),
 });
 export type ReorderImagesRequest = z.infer<typeof ReorderImagesRequest>;
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+
+/**
+ * Read-only catalog settings: the store currency every price must use (`STORE_CURRENCY` on
+ * the API). Exposed so admin clients can display it and build prices; never writable.
+ */
+export const CatalogSettings = z.strictObject({ storeCurrency: CurrencyCode });
+export type CatalogSettings = z.infer<typeof CatalogSettings>;
 
 // ---------------------------------------------------------------------------
 // Path parameters

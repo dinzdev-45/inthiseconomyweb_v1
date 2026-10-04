@@ -1,4 +1,10 @@
-import type { ProductDetail, ProductImage, ProductListItem, ProductVariant } from '@ite/contracts';
+import type {
+  ProductDetail,
+  ProductImage,
+  ProductListItem,
+  ProductStockSummary,
+  ProductVariant,
+} from '@ite/contracts';
 import type {
   Category as CategoryRow,
   Color as ColorRow,
@@ -72,7 +78,17 @@ export function toProductDetail(row: ProductDetailRow): ProductDetail {
   };
 }
 
-export function toProductListItem(row: ProductListRow): ProductListItem {
+const NO_STOCK: ProductStockSummary = {
+  totalQuantity: 0,
+  activeVariantCount: 0,
+  outOfStockVariantCount: 0,
+};
+
+/** A list item; `stock` comes from the page's stock summaries (absent → no active variants). */
+export function toProductListItem(
+  row: ProductListRow,
+  stock: ProductStockSummary = NO_STOCK,
+): ProductListItem {
   const primary = row.images[0];
   return {
     id: row.id,
@@ -82,6 +98,7 @@ export function toProductListItem(row: ProductListRow): ProductListItem {
     category: categoryRef(row.category),
     basePrice: toPrice(row.basePriceAmount, row.currency),
     variantCount: row._count.variants,
+    stock,
     primaryImage: primary ? { id: primary.id, url: primary.url, alt: primary.alt } : null,
     activatedAt: row.activatedAt?.toISOString() ?? null,
     ...attributionFields(row),

@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { E2E } from './config.ts';
+import { OWNER_NEW_PASSWORD } from './support/accounts.ts';
 
 const ADMIN_EMAIL = 'admin@e2e.test';
 const TEMP_PASSWORD = 'temporary-password-1';
 const ADMIN_PASSWORD = 'admin-chosen-password';
-const OWNER_NEW_PASSWORD = 'owner-chosen-password';
 
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/login');

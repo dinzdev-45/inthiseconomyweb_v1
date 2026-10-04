@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CATALOG_PRICE_MAX,
+  CatalogSettings,
   Category,
   CreateColorRequest,
   CreateImageRequest,
@@ -16,6 +17,7 @@ import {
   ProductListQuery,
   ProductListResponse,
   ProductStatus,
+  ProductStockSummary,
   ReorderImagesRequest,
   SizeCode,
   Sku,
@@ -238,6 +240,7 @@ describe('catalog responses', () => {
       category,
       basePrice: PRICE,
       variantCount: 3,
+      stock: { totalQuantity: 12, activeVariantCount: 2, outOfStockVariantCount: 1 },
       primaryImage: { id: ID, url: '/img/a.jpg', alt: 'Front' },
       activatedAt: '2026-10-04T08:00:00.000Z',
       ...ATTRIBUTION,
@@ -246,6 +249,39 @@ describe('catalog responses', () => {
     expect(ok(ProductListResponse, { data: [item], nextCursor: 'abc' })).toBe(true);
     expect(ok(ProductListResponse, { data: [item], nextCursor: null })).toBe(true);
     expect(ok(ProductListResponse, { data: [item] })).toBe(false);
+  });
+
+  it('ProductListItem carries a strict, non-negative stock summary', () => {
+    expect(
+      ok(ProductStockSummary, {
+        totalQuantity: 0,
+        activeVariantCount: 0,
+        outOfStockVariantCount: 0,
+      }),
+    ).toBe(true);
+    // Totals may exceed one variant's maximum (2,147,483,647).
+    expect(
+      ok(ProductStockSummary, {
+        totalQuantity: 4_294_967_294,
+        activeVariantCount: 2,
+        outOfStockVariantCount: 0,
+      }),
+    ).toBe(true);
+    for (const bad of [
+      { totalQuantity: -1, activeVariantCount: 0, outOfStockVariantCount: 0 },
+      { totalQuantity: 1.5, activeVariantCount: 1, outOfStockVariantCount: 0 },
+      { totalQuantity: 1, activeVariantCount: 1 },
+      { totalQuantity: 1, activeVariantCount: 1, outOfStockVariantCount: 0, extra: 1 },
+    ]) {
+      expect(ok(ProductStockSummary, bad)).toBe(false);
+    }
+  });
+
+  it('CatalogSettings exposes only the store currency', () => {
+    expect(ok(CatalogSettings, { storeCurrency: 'IDR' })).toBe(true);
+    expect(ok(CatalogSettings, { storeCurrency: 'idr' })).toBe(false);
+    expect(ok(CatalogSettings, { storeCurrency: 'IDR', priceMax: 1 })).toBe(false);
+    expect(ok(CatalogSettings, {})).toBe(false);
   });
 
   it('Category requires attribution and a known status', () => {

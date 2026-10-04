@@ -1,8 +1,9 @@
 import type {
-  ButtonHTMLAttributes,
+  ComponentPropsWithRef,
   InputHTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
 } from 'react';
 
 export function Field({
@@ -32,6 +33,37 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
+export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      rows={4}
+      {...props}
+      className="w-full rounded border border-line bg-white px-3 py-2 outline-none focus:border-ink"
+    />
+  );
+}
+
+/** A small text label. `tone` adds emphasis; the text itself always carries the meaning. */
+export function Badge({
+  tone = 'neutral',
+  children,
+}: {
+  tone?: 'neutral' | 'strong' | 'muted' | 'danger';
+  children: ReactNode;
+}) {
+  const styles = {
+    neutral: 'border-line bg-white text-ink',
+    strong: 'border-ink bg-ink text-paper',
+    muted: 'border-line bg-paper text-muted',
+    danger: 'border-danger/40 bg-danger/5 text-danger',
+  }[tone];
+  return (
+    <span className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${styles}`}>
+      {children}
+    </span>
+  );
+}
+
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className="rounded border border-line bg-white px-2 py-1" />;
 }
@@ -39,7 +71,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
 export function Button({
   variant = 'primary',
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' }) {
+}: ComponentPropsWithRef<'button'> & { variant?: 'primary' | 'secondary' }) {
   const styles =
     variant === 'primary'
       ? 'bg-ink text-paper hover:opacity-90'

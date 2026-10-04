@@ -1,3 +1,4 @@
+import type { ProductStockSummary } from '@ite/contracts';
 import type { CategoryStatus, Prisma, PrismaClient, ProductStatus, VariantStatus } from '@ite/db';
 
 import { afterCursor, CURSOR_ORDER_BY, type CursorKey } from '../../../pagination.ts';
@@ -98,6 +99,41 @@ export function createProductRepository(db: PrismaClient) {
         take,
         include: PRODUCT_LIST_INCLUDE,
       });
+    },
+
+    /**
+     * Stock summaries for a page of products in one aggregate query (ACTIVE variants only): total
+     * quantity, active variant count, and active variants at zero. Products with no active
+     * variant are absent from the result; callers treat them as all zeros.
+     */
+    async stockSummaries(productIds: readonly string[]): Promise<Map<string, ProductStockSummary>> {
+      if (productIds.length === 0) return new Map();
+      const rows = await db.$queryRaw<
+        {
+          productId: string;
+          totalQuantity: bigint;
+          activeVariantCount: number;
+          outOfStock: number;
+        }[]
+      >`
+        SELECT product_id AS "productId",
+               SUM(stock_quantity)::bigint AS "totalQuantity",
+               COUNT(*)::integer AS "activeVariantCount",
+               (COUNT(*) FILTER (WHERE stock_quantity = 0))::integer AS "outOfStock"
+        FROM product_variants
+        WHERE status = 'ACTIVE' AND product_id = ANY(${[...productIds]}::uuid[])
+        GROUP BY product_id
+      `;
+      return new Map(
+        rows.map((row) => [
+          row.productId,
+          {
+            totalQuantity: Number(row.totalQuantity),
+            activeVariantCount: row.activeVariantCount,
+            outOfStockVariantCount: row.outOfStock,
+          },
+        ]),
+      );
     },
 
     /** Existing product slugs starting with `prefix`, including archived products. */

@@ -59,7 +59,12 @@ export function createProductService({ repo, clock, storeCurrency, cursors }: De
         query.limit + 1,
       );
       const page = toPage(rows, query.limit, cursors);
-      return { data: page.rows.map(toProductListItem), nextCursor: page.nextCursor };
+      // One aggregate query for the whole page, never one per row.
+      const stock = await repo.stockSummaries(page.rows.map((row) => row.id));
+      return {
+        data: page.rows.map((row) => toProductListItem(row, stock.get(row.id))),
+        nextCursor: page.nextCursor,
+      };
     },
 
     async get(id: string): Promise<ProductDetail> {

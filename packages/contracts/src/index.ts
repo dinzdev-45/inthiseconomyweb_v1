@@ -13,6 +13,7 @@ export {
 export {
   CATALOG_PRICE_MAX,
   CatalogIdParams,
+  CatalogSettings,
   Category,
   CategoryListQuery,
   CategoryListResponse,
@@ -37,6 +38,7 @@ export {
   ProductImage,
   ProductImageListResponse,
   ProductListItem,
+  ProductStockSummary,
   ProductListQuery,
   ProductListResponse,
   ProductStatus,
@@ -73,6 +75,14 @@ export {
   PaginationQuery,
   Timestamp,
 } from './primitives.ts';
+export {
+  formatMoney,
+  minorUnitDigits,
+  parseMajorAmount,
+  toMajorUnits,
+  type MoneyInputError,
+  type MoneyInputResult,
+} from './money.ts';
 export {
   ChangeStaffRoleRequest,
   CreateStaffRequest,
