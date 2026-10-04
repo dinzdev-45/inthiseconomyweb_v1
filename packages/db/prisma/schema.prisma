@@ -1,0 +1,285 @@
+// InThisEconomy database schema.
+//
+// Conventions (see openspec/changes/initial-platform/design.md, D10 and D12):
+// - Models and fields are PascalCase/camelCase in Prisma and snake_case in
+//   PostgreSQL: every model has @@map("snake_case_plural") and every
+//   multi-word field has @map("snake_case").
+// - Primary keys: `id String @id @default(uuid(7)) @db.Uuid` (UUIDv7,
+//   generated in the app; use newId() from src/id.ts when an id is needed
+//   before insert).
+// - Timestamps: @db.Timestamptz(3), stored in UTC.
+// - Admin-managed models carry createdAt/updatedAt/createdById/updatedById
+//   mapped to created_at/updated_at/created_by/updated_by; set the *ById
+//   fields with withAttribution() from src/attribution.ts.
+// - Money: Int in minor units plus a `currency` Char(3) column.
+// - PostgreSQL extensions (e.g. citext) are created in migration SQL, not
+//   declared here, to avoid the postgresqlExtensions preview feature.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Admin identity (specs: admin-authentication, admin-access-control)
+// ---------------------------------------------------------------------------
+
+enum AdminRole {
+  OWNER
+  ADMIN
+
+  @@map("admin_role")
+}
+
+enum AdminStatus {
+  ACTIVE
+  DEACTIVATED
+
+  @@map("admin_status")
+}
+
+/// A staff account. Customers never have accounts.
+model AdminUser {
+  id                 String      @id @default(uuid(7)) @db.Uuid
+  /// Unique case-insensitively (citext).
+  email              String      @unique @db.Citext
+  passwordHash       String      @map("password_hash")
+  role               AdminRole
+  status             AdminStatus @default(ACTIVE)
+  /// Set when an Owner creates the account with a temporary password.
+  mustChangePassword Boolean     @default(false) @map("must_change_password")
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  /// Null when created by a system process or the bootstrap command.
+  createdById String?  @map("created_by") @db.Uuid
+  updatedById String?  @map("updated_by") @db.Uuid
+
+  createdBy AdminUser? @relation("AdminUserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy AdminUser? @relation("AdminUserUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAdminUsers AdminUser[]    @relation("AdminUserCreatedBy")
+  updatedAdminUsers AdminUser[]    @relation("AdminUserUpdatedBy")
+  sessions          AdminSession[]
+
+  // Catalog attribution back-relations (product-domain).
+  createdCategories      Category[]       @relation("CategoryCreatedBy")
+  updatedCategories      Category[]       @relation("CategoryUpdatedBy")
+  createdSizes           Size[]           @relation("SizeCreatedBy")
+  updatedSizes           Size[]           @relation("SizeUpdatedBy")
+  createdColors          Color[]          @relation("ColorCreatedBy")
+  updatedColors          Color[]          @relation("ColorUpdatedBy")
+  createdProducts        Product[]        @relation("ProductCreatedBy")
+  updatedProducts        Product[]        @relation("ProductUpdatedBy")
+  createdProductVariants ProductVariant[] @relation("ProductVariantCreatedBy")
+  updatedProductVariants ProductVariant[] @relation("ProductVariantUpdatedBy")
+  createdProductImages   ProductImage[]   @relation("ProductImageCreatedBy")
+  updatedProductImages   ProductImage[]   @relation("ProductImageUpdatedBy")
+
+  @@map("admin_users")
+}
+
+/// A server-side staff session. Only a SHA-256 hash of the cookie token is stored.
+model AdminSession {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  /// Hex-encoded SHA-256 of the session token.
+  tokenHash   String    @unique @map("token_hash") @db.Char(64)
+  adminUserId String    @map("admin_user_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@map("admin_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Catalog (specs: catalog-reference-data, product-management, product-variants-inventory)
+//
+// Constraints Prisma cannot express are added in the migration's raw SQL and verified by
+// apps/api/src/db/catalog-constraints.test.ts:
+// - CHECK: prices 0..2,000,000,000 (catalog business limit), stock >= 0, currency, slug, SKU,
+//   size-code and hex formats (all stored normalized, so plain unique indexes are case-insensitive)
+// - partial unique index: at most one primary image per product. "Exactly one primary when
+//   images exist" is guaranteed by the image service, not by the database alone.
+// ---------------------------------------------------------------------------
+
+enum CategoryStatus {
+  ACTIVE
+  ARCHIVED
+
+  @@map("category_status")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+
+  @@map("product_status")
+}
+
+enum VariantStatus {
+  ACTIVE
+  INACTIVE
+
+  @@map("variant_status")
+}
+
+model Category {
+  id     String         @id @default(uuid(7)) @db.Uuid
+  name   String
+  /// Lowercase kebab-case; unique among all categories, archived included.
+  slug   String         @unique
+  status CategoryStatus @default(ACTIVE)
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("CategoryUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  products Product[]
+
+  @@map("categories")
+}
+
+/// Size master data: any sizing system (S…XXL, OS, 28, 30/32, EU-42) is rows, not an enum.
+model Size {
+  id        String @id @default(uuid(7)) @db.Uuid
+  /// Normalized uppercase code, unique.
+  code      String @unique
+  label     String
+  /// Explicit display order; independent of the code's alphabetical or numeric value.
+  sortOrder Int    @map("sort_order")
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("SizeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("SizeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  variants ProductVariant[]
+
+  @@index([sortOrder, code])
+  @@map("sizes")
+}
+
+model Color {
+  id   String  @id @default(uuid(7)) @db.Uuid
+  name String
+  slug String  @unique
+  /// #RRGGBB, uppercase.
+  hex  String? @db.Char(7)
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("ColorCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("ColorUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  variants ProductVariant[]
+
+  @@map("colors")
+}
+
+model Product {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  name            String
+  /// Unique among all products, archived included; immutable after first activation (API rule).
+  slug            String        @unique
+  description     String?
+  status          ProductStatus @default(DRAFT)
+  categoryId      String        @map("category_id") @db.Uuid
+  /// Minor units of `currency`; 0..2,000,000,000 (CHECK in migration).
+  basePriceAmount Int           @map("base_price_amount")
+  /// ISO 4217; always the store currency (STORE_CURRENCY) at write time.
+  currency        String        @db.Char(3)
+  /// First activation; never cleared. Drives slug/SKU locks.
+  activatedAt     DateTime?     @map("activated_at") @db.Timestamptz(3)
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  category Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@index([status, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id                  String        @id @default(uuid(7)) @db.Uuid
+  productId           String        @map("product_id") @db.Uuid
+  sizeId              String        @map("size_id") @db.Uuid
+  colorId             String        @map("color_id") @db.Uuid
+  /// Normalized uppercase; unique across all products.
+  sku                 String        @unique
+  /// Minor units in the product's currency; null = use the product's base price.
+  priceOverrideAmount Int?          @map("price_override_amount")
+  stockQuantity       Int           @default(0) @map("stock_quantity")
+  status              VariantStatus @default(ACTIVE)
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("ProductVariantCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("ProductVariantUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  size    Size           @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  color   Color          @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  images  ProductImage[]
+
+  /// One variant per size × color within a product (also serves product_id lookups).
+  @@unique([productId, sizeId, colorId])
+  @@index([sizeId])
+  @@index([colorId])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  productId String  @map("product_id") @db.Uuid
+  /// Optional; must belong to the same product (API rule).
+  variantId String? @map("variant_id") @db.Uuid
+  /// https:// URL or root-relative path (metadata only; files are not stored here).
+  url       String
+  alt       String
+  sortOrder Int     @map("sort_order")
+  /// At most one per product (partial unique index in migration).
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdById String?    @map("created_by") @db.Uuid
+  updatedById String?    @map("updated_by") @db.Uuid
+  createdBy   AdminUser? @relation("ProductImageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("ProductImageUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([productId, sortOrder])
+  @@index([variantId])
+  @@map("product_images")
+}

@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import '@ite/config/tailwind/theme.css';
+
+body {
+  @apply bg-paper text-ink antialiased;
+}

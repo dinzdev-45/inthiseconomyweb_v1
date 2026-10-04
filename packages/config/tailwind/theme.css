@@ -1,0 +1,16 @@
+/*
+ * Shared Tailwind CSS v4 theme for apps/web and apps/admin.
+ * Usage in an app's global stylesheet:
+ *   @import 'tailwindcss';
+ *   @import '@ite/config/tailwind/theme.css';
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #111111;
+  --color-paper: #fafafa;
+  --color-muted: #6b6b6b;
+  --color-line: #e5e5e5;
+  --color-danger: #b42318;
+}

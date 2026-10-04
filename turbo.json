@@ -1,0 +1,35 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "SESSION_SECRET",
+    "ADMIN_ORIGIN",
+    "TRUST_PROXY",
+    "DOCKER_HOST",
+    "TESTCONTAINERS_*",
+    "CI"
+  ],
+  "tasks": {
+    "generate": {
+      "outputs": ["src/generated/**"]
+    },
+    "build": {
+      "dependsOn": ["^build", "^generate", "generate"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["API_URL", "TRUST_UPSTREAM_PROXY", "NODE_ENV"]
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": ["^generate", "generate"]
+    },
+    "test": {
+      "outputs": ["coverage/**"],
+      "dependsOn": ["^generate", "generate"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^generate", "generate"]
+    }
+  }
+}

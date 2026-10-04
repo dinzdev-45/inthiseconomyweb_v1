@@ -1,0 +1,35 @@
+{
+  "name": "@ite/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./seed": "./src/seed/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:check": "prisma migrate deploy && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
+    "db:seed": "prisma generate && node --env-file-if-exists=../../.env prisma/seed.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "~7.10.0",
+    "@prisma/client": "~7.10.0",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@ite/config": "workspace:*",
+    "@node-rs/argon2": "^2.2.1",
+    "@types/node": "^22.13.0",
+    "eslint": "^10.11.0",
+    "prisma": "~7.10.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

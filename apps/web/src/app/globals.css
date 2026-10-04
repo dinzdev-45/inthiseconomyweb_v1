@@ -1,0 +1,100 @@
+@import 'tailwindcss';
+@import '@ite/config/tailwind/theme.css';
+
+/*
+ * Storefront visual system (storefront-homepage design D3): the InThisEconomy
+ * brand palette. Extends the shared preset for apps/web only; apps/admin keeps
+ * the shared values.
+ *
+ * Measured contrast (WCAG): ink on cream 15.2:1, on paper 17.0:1. Brand Brown is
+ * 3.76:1 on cream, 4.20:1 on paper, 4.05:1 on ink, so it is used only for large
+ * text, the wordmark, UI (outlines, underlines, borders, markers), and
+ * backgrounds behind large text. Small brown text uses brand-dark on light
+ * (6.62:1 on cream) and soft on ink (9.34:1). Warm Grey (stone) passes only on
+ * paper (4.68:1); secondary text on cream uses ink at 70% (6.16:1).
+ */
+@theme {
+  --color-brand: #b1641e; /* Brand Brown / Dirty Brown — RGB 177 100 30, CMYK 24 66 100 11 */
+  --color-brand-dark: #7c4318; /* Dark Brown */
+  --color-cream: #f2ebdd; /* Warm Cream */
+  --color-ink: #171615; /* Near Black */
+  --color-stone: #756f67; /* Warm Grey */
+  --color-sand: #ccb99f; /* Sand */
+  --color-soft: #d9b48c; /* Soft Brown */
+  --color-paper: #faf8f3; /* Warm White */
+  --color-line: #ccb99f; /* hairlines (Sand) */
+  --color-danger: #7c4318; /* form errors: Dark Brown, never red */
+
+  /* Fluid editorial type scale (font size, line height, tracking). */
+  --text-hero: clamp(3.25rem, 12vw, 12rem);
+  --text-hero--line-height: 0.86;
+  --text-hero--letter-spacing: -0.035em;
+  --text-display: clamp(2.25rem, 7vw, 6rem);
+  --text-display--line-height: 0.9;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: clamp(1.5rem, 3.2vw, 2.75rem);
+  --text-title--line-height: 1;
+  --text-title--letter-spacing: -0.02em;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.14em;
+
+  /* Height of the sticky header; used for scroll padding and the hero's min height. */
+  --spacing-header: 4rem;
+}
+
+/* Archivo from next/font (CSS variable set on <html> in layout.tsx), then a system fallback. */
+@theme inline {
+  --font-sans:
+    var(--font-archivo), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+}
+
+/*
+ * Hover effects only where hovering is real (mouse/trackpad) and motion is welcome:
+ * touch devices and reduced-motion users keep the default state (spec: Hover image on desktop).
+ */
+@custom-variant hover-fine (@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference));
+
+/* Placeholder film grain: an inline SVG turbulence texture (no network request). */
+@utility media-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: multiply;
+}
+
+@layer base {
+  html {
+    /* Anchored or keyboard-focused content is never hidden under the sticky header. */
+    scroll-padding-top: calc(var(--spacing-header) + 1rem);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+  }
+
+  /* No page scrolling behind an open modal (the mobile menu). */
+  html:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  /* One visible focus style everywhere: Brand Brown is at least 3:1 on paper, cream, and ink.
+     The Brand Brown manifesto switches it to cream. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 3px;
+  }
+
+  /* Backstop for reduced motion, beyond per-element motion-safe: variants. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0s !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

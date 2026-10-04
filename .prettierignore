@@ -1,0 +1,6 @@
+pnpm-lock.yaml
+openspec/
+.claude/
+packages/db/src/generated/
+apps/admin/next-env.d.ts
+apps/web/next-env.d.ts

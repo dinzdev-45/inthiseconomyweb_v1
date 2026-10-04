@@ -1,0 +1,68 @@
+schema: spec-driven
+
+# Project context, shown to AI when creating artifacts.
+context: |
+  Product: InThisEconomy, a fashion e-commerce platform. Storefront features (planned in
+  later changes): Home, Shop, Collection, Product Detail, Size Guide, Current Drop, Drop
+  Archive, Lookbook, Shop The Look, Brand Story, Search, Cart, Guest Checkout, Payment,
+  Order Confirmation, Order Tracking, Restock Notification. Admin features: Dashboard,
+  products/variants/sizes/colors, inventory, collections, drops, lookbook, orders,
+  promotions, customer order data, reports, site content.
+
+  Permanent product decision: there are NO customer accounts, login/register, or wishlist.
+  Customers always check out as guests. Only staff authenticate, to the admin. Do not
+  propose customer auth.
+
+  Stack: TypeScript everywhere; Node.js 22 (runs the API's .ts directly via type stripping);
+  pnpm 12 workspaces + Turborepo; Next.js 16 App Router + React 19 + Tailwind CSS 4
+  (storefront and admin); Fastify 5 REST API; PostgreSQL 16 + Prisma 7 (driver adapter
+  @prisma/adapter-pg); Zod 4 contracts; Vitest, Testcontainers, Playwright; GitHub Actions.
+
+  Monorepo: apps/api (modular monolith: src/modules/<name>/{routes,service,repository}.ts,
+  cross-cutting Fastify plugins in src/plugins), apps/admin (staff UI; proxies /api/* to the
+  API), apps/web (storefront; calls the API server-side only, feature folders under
+  src/features), packages/db (Prisma schema, migrations, seed, client), packages/contracts
+  (browser-safe Zod schemas, Role/Permission/ROLE_PERMISSIONS), packages/config (tsconfig,
+  ESLint, Prettier, Tailwind presets). Apps never import each other (lint-enforced).
+  Workspace packages are consumed as TypeScript source with .ts import extensions.
+
+  Coding conventions: strict TypeScript; Prettier (single quotes, trailing commas, width
+  100); routes only parse/serialize, services own rules and transactions, repositories are
+  the only Prisma callers; time-dependent logic takes an injectable Clock; config is
+  validated with Zod at startup and errors name variables but never print values; new
+  dependencies are checked for release age and compatibility, and pnpm install scripts
+  must be approved in pnpm-workspace.yaml.
+
+  API conventions: /api/v1 with zones /store (public), /admin (staff session; Origin check
+  on mutations; every route declares config.permission as a Permission, 'authenticated',
+  or 'anonymous'), /webhooks (signature-verified, future). All errors are RFC 7807
+  application/problem+json with type, title, status, detail, requestId and optional code
+  (ErrorCode) and errors[]. Bodies are strict (unknown properties rejected); responses
+  are validated against their schema; X-Request-Id on every response; camelCase JSON;
+  money is { amount: integer minor units, currency: ISO 4217 }; ids are UUIDv7;
+  timestamps are ISO 8601 UTC. Schemas live in @ite/contracts and are reused, never
+  duplicated. Lists use the { data } envelope (cursor pagination to be added when first
+  needed).
+
+  Database conventions: Prisma models map to snake_case tables/columns (@@map/@map); ids
+  are String @db.Uuid with @default(uuid(7)); timestamps are @db.Timestamptz(3);
+  admin-managed tables carry created_at, updated_at, created_by, updated_by (null actor =
+  system or bootstrap), set via withAttribution(); PostgreSQL extensions (e.g. citext) are
+  created in migration SQL; concurrency-sensitive invariants use row locks inside
+  transactions.
+
+  Testing: every "#### Scenario:" in a change's specs has a test with the same title
+  (checked by `pnpm spec:coverage`); integration tests run against real PostgreSQL;
+  E2E via Playwright.
+
+  Deferred to a future `admin-security-hardening` change: mandatory TOTP 2FA, recovery
+  codes, staff invitation workflow, the four-role matrix (Owner/Manager/Fulfillment/
+  Content), an immutable audit log, session listing/revocation, lockout policies,
+  background jobs/outbox (pg-boss), re-hashing passwords on login, and a nonce-based CSP.
+  Also open: production proxy trust (TRUST_UPSTREAM_PROXY stays false until the
+  deployment topology is decided) and a shared rate-limit store before horizontal scaling.
+
+# Per-artifact rules (optional)
+# rules:
+#   proposal:
+#     - Keep proposals under 500 words

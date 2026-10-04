@@ -1,0 +1,31 @@
+{
+  "name": "inthiseconomy",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:seed": "pnpm --filter @ite/db db:seed",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "pnpm --filter @ite/db db:migrate",
+    "db:check": "pnpm --filter @ite/db db:check",
+    "admin:bootstrap-owner": "pnpm --filter @ite/api admin:bootstrap-owner",
+    "e2e": "pnpm --filter @ite/admin e2e",
+    "spec:coverage": "node scripts/spec-coverage.ts"
+  },
+  "prettier": "@ite/config/prettier",
+  "devDependencies": {
+    "@ite/config": "workspace:*",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.0",
+    "typescript": "~6.0.3"
+  }
+}

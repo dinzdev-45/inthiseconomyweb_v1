@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build, E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Ephemeral PostgreSQL for the migration check and the E2E stack.
+    # Integration tests start their own containers through Testcontainers (Docker is available on ubuntu runners).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ite
+          POSTGRES_PASSWORD: ci-only-password # throwaway service on the runner, never reachable elsewhere
+          POSTGRES_DB: inthiseconomy
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ite -d inthiseconomy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: 'true'
+      TURBO_TELEMETRY_DISABLED: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+      DATABASE_URL: postgresql://ite:ci-only-password@localhost:5432/inthiseconomy
+      ADMIN_ORIGIN: http://localhost:3001
+      API_URL: http://127.0.0.1:4000
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Uses the pnpm version pinned in package.json "packageManager".
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # A fresh random secret per run; nothing secret is committed.
+      - name: Generate session secret
+        run: echo "SESSION_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit and integration tests
+        run: pnpm test
+
+      # Applies all migrations to the fresh service database, then fails if the
+      # resulting schema differs from schema.prisma (no shadow database needed).
+      - name: Prisma migration check
+        run: pnpm db:check
+
+      - name: Build
+        run: pnpm build
+
+      # Every scenario of each listed target needs a test with the same name; fails on any gap.
+      # Active changes are named directly; archived changes are checked through the main specs
+      # they were synced into (specs/<capability>), which must exist.
+      - name: OpenSpec scenario coverage
+        run: >-
+          pnpm spec:coverage
+          initial-platform
+          specs/storefront-homepage
+          specs/storefront-navigation
+          specs/catalog-reference-data
+          specs/product-management
+          specs/product-variants-inventory
+
+      # Admin and storefront use the same Playwright version, so one Chromium install serves both.
+      - name: Install Playwright Chromium
+        run: pnpm --filter @ite/admin exec playwright install --with-deps chromium
+
+      - name: Admin E2E smoke
+        run: pnpm e2e
+
+      # Storefront build with no API running (homepage, navigation, quality, accessibility).
+      - name: Storefront E2E
+        run: pnpm --filter @ite/web e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: |
+            apps/admin/test-results/
+            apps/web/test-results/
+          retention-days: 7
