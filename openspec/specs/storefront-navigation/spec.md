@@ -18,7 +18,7 @@ Every storefront page SHALL show a header containing the InThisEconomy wordmark 
 - **THEN** the header remains visible at the top of the viewport, and an element focused by keyboard below it is scrolled into view without being hidden under the header
 
 ### Requirement: No customer account entry points
-The storefront header, mobile menu, and footer SHALL NOT contain any account, sign-in, register, or wishlist link, button, or icon. Cart SHALL be a plain link with no item count until cart functionality exists.
+The storefront header, mobile menu, and footer SHALL NOT contain any account, sign-in, register, or wishlist link, button, or icon. The Cart link SHALL show the cart's item count when the cart has items (see `storefront-cart`), and SHALL be a plain link otherwise.
 
 #### Scenario: No account or wishlist controls
 - **WHEN** the header, mobile menu, and footer are inspected on any screen size
