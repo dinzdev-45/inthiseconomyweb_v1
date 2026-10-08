@@ -16,7 +16,7 @@
     "build": {
       "dependsOn": ["^build", "^generate", "generate"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "env": ["API_URL", "TRUST_UPSTREAM_PROXY", "NODE_ENV"]
+      "env": ["API_URL", "SITE_URL", "STOREFRONT_IMAGE_HOSTS", "TRUST_UPSTREAM_PROXY", "NODE_ENV"]
     },
     "lint": {},
     "typecheck": {

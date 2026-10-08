@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Workspace packages are consumed as TypeScript source.
   transpilePackages: ['@ite/contracts'],
+  // storefront-catalog design D7: product images load only from the configured https hosts
+  // (plus the storefront's own root-relative paths).
+  images: {
+    remotePatterns: env.STOREFRONT_IMAGE_HOSTS.map((hostname) => ({
+      protocol: 'https' as const,
+      hostname,
+      pathname: '/**',
+    })),
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

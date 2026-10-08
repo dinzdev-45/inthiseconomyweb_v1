@@ -10,8 +10,8 @@ export type Media = {
 
 /**
  * What a product card needs. A presentation view model local to the
- * storefront: when catalog contracts exist, a mapper in the catalog feature's
- * server/ folder converts API responses into this shape.
+ * storefront: `server/mapper.ts` converts store catalog API summaries into this
+ * shape. `color` is the shown color text (a name, or "3 colors").
  */
 export type ProductSummary = {
   slug: string;
@@ -22,4 +22,8 @@ export type ProductSummary = {
   image: Media | null;
   /** Optional second image shown on hover/focus on fine-pointer devices. */
   hoverImage: Media | null;
+  /** Catalog only: shown as "Sold out" text when SOLD_OUT. Homepage cards leave it unset. */
+  availability?: 'IN_STOCK' | 'SOLD_OUT';
+  /** Catalog only: the highest price; when it differs from `price` the card reads "From". */
+  priceMax?: Money;
 };

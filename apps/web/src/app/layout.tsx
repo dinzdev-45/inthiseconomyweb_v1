@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
+import { loadEnv } from '@/env';
 import { NewsletterForm } from '@/features/home';
 import { SiteFooter, SiteHeader, SkipLink } from '@/features/navigation';
 
@@ -8,6 +9,8 @@ import { archivo } from './fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
+  // Canonical and other URL metadata resolve against the public site origin (design D9).
+  metadataBase: new URL(loadEnv().SITE_URL),
   title: { default: 'InThisEconomy', template: '%s · InThisEconomy' },
   description: 'Fashion from InThisEconomy.',
 };
