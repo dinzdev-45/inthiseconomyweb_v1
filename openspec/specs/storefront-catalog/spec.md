@@ -137,22 +137,6 @@ The header's Search link SHALL lead here.
 - **WHEN** the shop is loading
 - **THEN** placeholder cards with the final card dimensions are shown and marked as busy
 
-### Requirement: Product page placeholder
-Until product detail exists, `/products/<slug>` SHALL show:
-- an active product's name, its price or price range, and "Sold out" when sold out
-- that full details are coming soon
-- a link back to the shop
-
-It SHALL NOT offer size selection or any cart control. A slug that is not an active product SHALL show the storefront's "Page not found" page with status 404.
-
-#### Scenario: Product link from a card
-- **WHEN** a customer follows a catalog card's link
-- **THEN** `/products/<slug>` shows that product's name and price, says full details are coming soon, and links back to the shop
-
-#### Scenario: Unavailable product page
-- **WHEN** a customer opens `/products/<slug>` for a draft, inactive, archived, or unknown product
-- **THEN** the storefront "Page not found" page is shown with status 404
-
 ### Requirement: Homepage to catalog
 The homepage SHALL stay static and make no API calls. These links SHALL lead into the catalog:
 - its "Shop all" link
@@ -173,7 +157,7 @@ The homepage's content and layout SHALL NOT change.
 - **Titles and descriptions:** catalog pages SHALL have them.
 - **Indexable views, each with its own canonical URL:** `/shop`, its numbered pages, and `/shop?category=<slug>` (with its pages).
 - **Other filter or sort combinations:** `noindex, follow`, with a canonical URL that drops those parameters.
-- **Always `noindex`:** `/search` and the product page placeholder.
+- **Always `noindex`:** `/search`.
 
 Canonical URLs SHALL be absolute, based on the configured site URL.
 
@@ -190,8 +174,8 @@ Canonical URLs SHALL be absolute, based on the configured site URL.
 - **THEN** it is `noindex, follow`, and its canonical URL drops the size, sort, and color parameters
 
 #### Scenario: Search and placeholder pages are not indexed
-- **WHEN** `/search?q=hoodie` or a product page placeholder is rendered
-- **THEN** it is `noindex`
+- **WHEN** `/search` or `/search?q=hoodie` is rendered
+- **THEN** it is `noindex` (product pages are no longer placeholders; their indexing is specified by `storefront-product-detail`)
 
 ### Requirement: Catalog accessibility
 Catalog pages SHALL:
@@ -202,7 +186,7 @@ Catalog pages SHALL:
 - be fully usable with a keyboard and a visible focus indicator
 
 #### Scenario: Catalog accessibility scan
-- **WHEN** the shop (with and without filters), the search page, and a product page placeholder are scanned with axe
+- **WHEN** the shop (with and without filters) and the search page (with and without results) are scanned with axe
 - **THEN** there are zero serious or critical violations
 
 #### Scenario: Keyboard catalog navigation

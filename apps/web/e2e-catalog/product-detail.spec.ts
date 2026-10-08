@@ -249,20 +249,3 @@ test.describe('storefront-product-detail: Product page SEO', () => {
     expect((await robots(page)) ?? '').not.toMatch(/noindex/);
   });
 });
-
-/*
- * The main storefront-catalog spec still lists the placeholder's "Product link from a card" until
- * the product-detail change is archived (its delta removes that requirement). Until then this
- * checks the part that still holds: a catalog card opens the product page, with its name, price,
- * and a link back to the shop. Delete this block when archiving product-detail.
- */
-test.describe('storefront-catalog: Product page placeholder (removed on archive)', () => {
-  test('Product link from a card', async ({ page }) => {
-    await openCatalog(page, '/shop?category=outerwear');
-    await page.getByRole('link', { name: /Zip Hoodie/ }).click();
-    await expect(page).toHaveURL(/\/products\/zip-hoodie$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Zip Hoodie' })).toBeVisible();
-    await expect(price(page)).toHaveText(/^From Rp\s799\.000$/);
-    await expect(page.getByRole('link', { name: 'Back to the shop' })).toBeVisible();
-  });
-});

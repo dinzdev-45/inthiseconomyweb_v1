@@ -97,7 +97,7 @@ jobs:
           specs/admin-products
           specs/store-catalog-api
           specs/storefront-catalog
-          product-detail
+          specs/storefront-product-detail
 
       # Admin and storefront use the same Playwright version, so one Chromium install serves both.
       - name: Install Playwright Chromium
