@@ -1,6 +1,6 @@
-import { createHmac, randomBytes } from 'node:crypto';
-
 import { ADMIN_SESSION_COOKIE } from '@ite/contracts';
+
+import { generateToken, keyedHash } from '../../secret-token.ts';
 
 export const SESSION_COOKIE = ADMIN_SESSION_COOKIE;
 
@@ -13,7 +13,7 @@ export const SESSION_TOUCH_INTERVAL_MS = 60 * 1000;
 
 /** A new 256-bit random session token for the cookie. Never stored. */
 export function generateSessionToken(): string {
-  return randomBytes(32).toString('base64url');
+  return generateToken();
 }
 
 /**
@@ -22,7 +22,7 @@ export function generateSessionToken(): string {
  * against tokens. Rotating SESSION_SECRET signs everyone out.
  */
 export function hashSessionToken(secret: string, token: string): string {
-  return createHmac('sha256', secret).update(token).digest('hex');
+  return keyedHash(secret, token);
 }
 
 type SessionTimes = { lastSeenAt: Date; expiresAt: Date; revokedAt: Date | null };
