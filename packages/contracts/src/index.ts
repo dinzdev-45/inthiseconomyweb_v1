@@ -84,6 +84,18 @@ export {
   type MoneyInputResult,
 } from './money.ts';
 export {
+  STORE_PAGE_SIZE,
+  StoreAvailability,
+  StoreCatalogFilters,
+  StorePage,
+  StoreProductListQuery,
+  StoreProductListResponse,
+  StoreProductParams,
+  StoreProductSummary,
+  StoreSearchText,
+  StoreSort,
+} from './store-catalog.ts';
+export {
   ChangeStaffRoleRequest,
   CreateStaffRequest,
   StaffIdParams,
