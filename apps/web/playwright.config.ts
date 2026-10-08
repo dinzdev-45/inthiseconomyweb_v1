@@ -26,6 +26,7 @@ export default defineConfig({
     timeout: 240_000,
     env: {
       API_URL: 'http://127.0.0.1:4999',
+      SITE_URL: `http://localhost:${PORT}`,
       NEXT_TELEMETRY_DISABLED: '1',
       // Enables the test-only /e2e-fixtures pages (404 everywhere else).
       STOREFRONT_E2E_FIXTURES: '1',

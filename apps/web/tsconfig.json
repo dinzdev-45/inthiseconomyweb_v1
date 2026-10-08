@@ -11,8 +11,10 @@
     "vitest.config.ts",
     "vitest.setup.ts",
     "playwright.config.ts",
+    "playwright.catalog.config.ts",
     "src",
     "e2e",
+    "e2e-catalog",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]

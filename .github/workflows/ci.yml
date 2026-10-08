@@ -41,6 +41,7 @@ jobs:
       DATABASE_URL: postgresql://ite:ci-only-password@localhost:5432/inthiseconomy
       ADMIN_ORIGIN: http://localhost:3001
       API_URL: http://127.0.0.1:4000
+      SITE_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v7
@@ -91,7 +92,12 @@ jobs:
           specs/catalog-reference-data
           specs/product-management
           specs/product-variants-inventory
-          admin-product-management
+          specs/admin-catalog-ui
+          specs/admin-catalog-reference-data
+          specs/admin-products
+          specs/store-catalog-api
+          specs/storefront-catalog
+          specs/storefront-product-detail
 
       # Admin and storefront use the same Playwright version, so one Chromium install serves both.
       - name: Install Playwright Chromium
@@ -103,6 +109,10 @@ jobs:
       # Storefront build with no API running (homepage, navigation, quality, accessibility).
       - name: Storefront E2E
         run: pnpm --filter @ite/web e2e
+
+      # Storefront catalog against a real API on its own seeded database (ite_e2e_store).
+      - name: Storefront catalog E2E
+        run: pnpm --filter @ite/web e2e:catalog
 
       - name: Upload Playwright artifacts
         if: failure()

@@ -1,4 +1,10 @@
+export { CatalogSkeleton } from './components/CatalogSkeleton.tsx';
+export { CatalogUnavailable } from './components/CatalogUnavailable.tsx';
 export { ProductCard } from './components/ProductCard.tsx';
+export { SearchView } from './components/SearchView.tsx';
+export { ShopView } from './components/ShopView.tsx';
 export { ProductGrid } from './components/ProductGrid.tsx';
 export { ProductRail } from './components/ProductRail.tsx';
 export type { Media, ProductSummary } from './types.ts';
+export { parseCatalogState, type SearchParams } from './url-state.ts';
+export { searchMetadata, shopMetadata } from './seo.ts';

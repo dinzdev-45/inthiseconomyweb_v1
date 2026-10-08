@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:catalog": "playwright test -c playwright.catalog.config.ts"
   },
   "dependencies": {
     "@ite/contracts": "workspace:*",

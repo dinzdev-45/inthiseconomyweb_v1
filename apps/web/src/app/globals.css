@@ -86,6 +86,19 @@
     outline-offset: 3px;
   }
 
+  /* Catalog filters (storefront-catalog design D8): a closed "Filter and sort" disclosure below
+     1024 px; from 1024 px the form is always shown and the summary is hidden. */
+  @media (min-width: 1024px) {
+    .catalog-filters > summary {
+      display: none;
+    }
+    .catalog-filters::details-content {
+      content-visibility: visible;
+      display: block;
+      height: auto;
+    }
+  }
+
   /* Backstop for reduced motion, beyond per-element motion-safe: variants. */
   @media (prefers-reduced-motion: reduce) {
     *,
