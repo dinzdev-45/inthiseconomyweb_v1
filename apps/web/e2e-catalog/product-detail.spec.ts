@@ -32,9 +32,10 @@ test.describe('storefront-product-detail: Product page', () => {
       'href',
       '/shop',
     );
-    // No cart, quantity, or wishlist controls.
-    await expect(main.locator('button, form, input, select')).toHaveCount(0);
-    await expect(main).not.toContainText(/add to (cart|bag)|wishlist|quantity/i);
+    // An "Add to cart" control, and no quantity or wishlist controls.
+    await expect(main.locator('[data-add-to-cart] button')).toHaveText('Select a size');
+    await expect(main.locator('select, input:not([type="hidden"])')).toHaveCount(0);
+    await expect(main).not.toContainText(/wishlist|quantity/i);
   });
 
   test('Unavailable product page', async ({ page }) => {

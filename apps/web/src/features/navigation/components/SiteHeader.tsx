@@ -1,8 +1,10 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 import { Wordmark } from '@/components/Wordmark';
 
 import { PRIMARY_LINKS, UTILITY_LINKS } from '../nav-links.ts';
+import { CartLinkContent, CartLinkLabel } from './CartLinkLabel.tsx';
 import { BagIcon, SearchIcon } from './icons.tsx';
 import { MobileMenu } from './MobileMenu.tsx';
 
@@ -50,12 +52,26 @@ export function SiteHeader() {
                       href={link.href}
                       className={`${linkStyle} inline-flex min-h-11 min-w-11 items-center justify-center md:min-h-0 md:min-w-0`}
                     >
-                      {Icon ? (
-                        <span className="md:hidden">
-                          <Icon />
-                        </span>
-                      ) : null}
-                      <span className="sr-only md:not-sr-only">{link.label}</span>
+                      {link.href === '/cart' ? (
+                        // The item count reads search params, which static pages provide on the
+                        // client; until then (and without a count) it is the plain link.
+                        <Suspense
+                          fallback={
+                            <CartLinkContent label={link.label} icon={Icon ? <Icon /> : null} />
+                          }
+                        >
+                          <CartLinkLabel label={link.label} icon={Icon ? <Icon /> : null} />
+                        </Suspense>
+                      ) : (
+                        <>
+                          {Icon ? (
+                            <span className="md:hidden">
+                              <Icon />
+                            </span>
+                          ) : null}
+                          <span className="sr-only md:not-sr-only">{link.label}</span>
+                        </>
+                      )}
                     </Link>
                   </li>
                 );

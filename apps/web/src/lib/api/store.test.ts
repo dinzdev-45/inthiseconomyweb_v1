@@ -2,7 +2,7 @@ import { HealthResponse } from '@ite/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
-const { StoreApiError, getApiHealth, storeGet } = await import('./store.ts');
+const { StoreApiError, getApiHealth, storeGet, storeRequest } = await import('./store.ts');
 
 const fetchMock = vi.fn<typeof fetch>();
 beforeEach(() => {
@@ -67,5 +67,62 @@ describe('storeGet', () => {
   it('propagates network failures (the error page handles them)', async () => {
     fetchMock.mockRejectedValue(new TypeError('fetch failed'));
     await expect(getApiHealth()).rejects.toThrow('fetch failed');
+  });
+});
+
+describe('storeRequest', () => {
+  it('sends the method, a JSON body, and the cart token header, never cached', async () => {
+    fetchMock.mockResolvedValue(json(200, { status: 'ok' }));
+    await storeRequest('POST', '/api/v1/store/cart/items', HealthResponse, {
+      cartToken: 'token-123',
+      body: { quantity: 1 },
+    });
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('http://api.internal:4000/api/v1/store/cart/items');
+    expect(init).toEqual({
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'x-cart-token': 'token-123',
+      },
+      body: '{"quantity":1}',
+      cache: 'no-store',
+    });
+    // The token is never part of the URL.
+    expect(String(url)).not.toContain('token-123');
+  });
+
+  it('omits the body and token when not given', async () => {
+    fetchMock.mockResolvedValue(json(201, { status: 'ok' }));
+    await storeRequest('POST', '/api/v1/store/cart', HealthResponse);
+    expect(fetchMock.mock.calls[0]![1]).toEqual({
+      method: 'POST',
+      headers: { accept: 'application/json' },
+      cache: 'no-store',
+    });
+  });
+
+  it('turns a problem response into a StoreApiError with its code', async () => {
+    fetchMock.mockResolvedValue(
+      json(
+        409,
+        {
+          type: 'about:blank',
+          title: 'Conflict',
+          status: 409,
+          detail: 'x',
+          requestId: 'r',
+          code: 'QUANTITY_LIMIT',
+        },
+        'application/problem+json',
+      ),
+    );
+    await expect(
+      storeRequest('POST', '/api/v1/store/cart/items', HealthResponse),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'QUANTITY_LIMIT',
+    });
   });
 });

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import type { Selection } from '../selection.ts';
 import type { SizeGuide as SizeGuideData } from '../size-guide.ts';
@@ -13,13 +14,21 @@ type ProductDetailViewProps = {
   product: ProductDetail;
   selection: Selection;
   sizeGuide: SizeGuideData | null;
+  /** The add-to-cart control, from the cart feature (composed by the route). */
+  cartControl?: ReactNode;
 };
 
 /**
  * The product detail page (storefront-product-detail): gallery, then name, category, price,
- * color and size options, size guide, and description. No cart controls: there is no cart yet.
+ * color and size options, the add-to-cart control, size guide, and description. No quantity or
+ * wishlist controls.
  */
-export function ProductDetailView({ product, selection, sizeGuide }: ProductDetailViewProps) {
+export function ProductDetailView({
+  product,
+  selection,
+  sizeGuide,
+  cartControl,
+}: ProductDetailViewProps) {
   return (
     <section className="mx-auto max-w-[1600px] px-4 py-8 md:px-8 md:py-12">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-12">
@@ -36,6 +45,7 @@ export function ProductDetailView({ product, selection, sizeGuide }: ProductDeta
             selected={selection.size}
             colorName={selection.color.name}
           />
+          {cartControl}
           {sizeGuide ? <SizeGuide guide={sizeGuide} /> : null}
           {product.description ? (
             <div className="mt-8">

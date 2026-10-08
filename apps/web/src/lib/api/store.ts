@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { HealthResponse, ProblemDetails, type ErrorCode } from '@ite/contracts';
+import { CART_TOKEN_HEADER, HealthResponse, ProblemDetails, type ErrorCode } from '@ite/contracts';
 import type { z } from 'zod';
 
 import { loadEnv } from '../../env.ts';
@@ -39,6 +39,14 @@ export async function storeGet<S extends z.ZodType>(
       ? { cache: 'no-store' }
       : { next: { revalidate: init.revalidate } }),
   });
+  return parseResponse(response, schema);
+}
+
+/** The validated body of a successful response; a failure becomes a StoreApiError. */
+async function parseResponse<S extends z.ZodType>(
+  response: Response,
+  schema: S,
+): Promise<z.infer<S>> {
   if (!response.ok) {
     const problem = response.headers.get('content-type')?.includes('application/problem+json')
       ? ProblemDetails.safeParse(await response.json().catch(() => undefined))
@@ -46,6 +54,30 @@ export async function storeGet<S extends z.ZodType>(
     throw new StoreApiError(response.status, problem?.success ? problem.data : undefined);
   }
   return schema.parse(await response.json());
+}
+
+/**
+ * Server-side call to the store API that is never cached, for carts (guest-cart design D5):
+ * any method, an optional JSON body, and the cart token in `X-Cart-Token` when given (never in
+ * the URL). Same validation and errors as `storeGet`.
+ */
+export async function storeRequest<S extends z.ZodType>(
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  path: `/api/v1/store/${string}`,
+  schema: S,
+  { cartToken, body }: { cartToken?: string; body?: unknown } = {},
+): Promise<z.infer<S>> {
+  const response = await fetch(`${loadEnv().API_URL}${path}`, {
+    method,
+    headers: {
+      accept: 'application/json',
+      ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+      ...(cartToken === undefined ? {} : { [CART_TOKEN_HEADER]: cartToken }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    cache: 'no-store',
+  });
+  return parseResponse(response, schema);
 }
 
 /** Liveness of the API, used by the placeholder home page. */
