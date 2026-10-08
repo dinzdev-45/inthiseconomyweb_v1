@@ -1,6 +1,7 @@
 import {
   STORE_PAGE_SIZE,
   type StoreCatalogFilters,
+  type StoreProductDetail,
   type StoreProductListQuery,
   type StoreProductListResponse,
   type StoreProductSummary,
@@ -60,15 +61,30 @@ export function createStoreCatalogService({ repo }: { repo: StoreCatalogReposito
     },
 
     /**
-     * One ACTIVE product's summary. Draft, inactive, archived, and unknown slugs all give the
+     * One ACTIVE product's detail. Draft, inactive, archived, and unknown slugs all give the
      * same 404, so a hidden product cannot be told apart from a missing one.
      */
-    async get(slug: string): Promise<StoreProductSummary> {
+    async get(slug: string): Promise<StoreProductDetail> {
       const { rows } = await repo.page({ slug }, 'newest', 1, 0);
       const row = rows[0];
-      if (!row) throw new DomainError('NOT_FOUND', 404, 'Product not found.');
-      const extras = await repo.extras([row.id]);
-      return toSummary(row, extras.get(row.id) ?? NO_EXTRAS);
+      const detail = row ? await repo.detail(row.id) : null;
+      if (!row || !detail) throw new DomainError('NOT_FOUND', 404, 'Product not found.');
+      const { description, images, variants, ...extras } = detail;
+      return {
+        ...toSummary(row, extras),
+        description,
+        images,
+        variants: variants.map((variant) => ({
+          size: { code: variant.sizeCode, label: variant.sizeLabel },
+          color: toColor({
+            slug: variant.colorSlug,
+            name: variant.colorName,
+            hex: variant.colorHex,
+          }),
+          price: toPrice(variant.amount, row.currency),
+          availability: variant.inStock ? 'IN_STOCK' : 'SOLD_OUT',
+        })),
+      };
     },
 
     async filters(): Promise<StoreCatalogFilters> {

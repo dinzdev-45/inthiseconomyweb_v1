@@ -41,6 +41,29 @@ export const StoreProductSummary = z.strictObject({
 });
 export type StoreProductSummary = z.infer<typeof StoreProductSummary>;
 
+/**
+ * One product for its detail page (`GET /products/{slug}`): every summary field plus the
+ * description, the images to show (each tagged with the color it shows), and the ACTIVE
+ * variants with their price and availability. Still customer-safe: no ids, SKUs, stock
+ * quantities, attribution, or timestamps.
+ */
+export const StoreProductDetail = z.strictObject({
+  ...StoreProductSummary.shape,
+  description: z.string().nullable(),
+  /** In display order; images of colors no ACTIVE variant uses are left out. */
+  images: z.array(z.strictObject({ url: ImageUrl, alt: z.string(), color: Slug.nullable() })),
+  /** ACTIVE variants, by size display order, then color name. */
+  variants: z.array(
+    z.strictObject({
+      size: z.strictObject({ code: SizeCode, label: z.string() }),
+      color: StoreColor,
+      price: Money,
+      availability: StoreAvailability,
+    }),
+  ),
+});
+export type StoreProductDetail = z.infer<typeof StoreProductDetail>;
+
 export const StoreProductListQuery = z.strictObject({
   category: Slug.optional(),
   size: SizeCode.optional(),

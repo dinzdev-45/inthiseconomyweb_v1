@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   STORE_PAGE_SIZE,
   StoreCatalogFilters,
+  StoreProductDetail,
   StoreProductListQuery,
   StoreProductListResponse,
   StoreProductSummary,
@@ -116,5 +117,50 @@ describe('store catalog responses', () => {
         colors: [],
       }),
     ).toBe(false);
+  });
+});
+
+describe('StoreProductDetail', () => {
+  const DETAIL = {
+    ...SUMMARY,
+    description: 'Heavyweight fleece hoodie.',
+    images: [
+      { url: '/images/front.jpg', alt: 'Front', color: 'washed-black' },
+      { url: '/images/detail.jpg', alt: 'Detail', color: null },
+    ],
+    variants: [
+      {
+        size: { code: 'M', label: 'Medium' },
+        color: { slug: 'washed-black', name: 'Washed Black', hex: '#2B2A28' },
+        price: PRICE,
+        availability: 'SOLD_OUT',
+      },
+    ],
+  };
+
+  it('accepts the summary fields plus description, color-tagged images, and variants', () => {
+    expect(ok(StoreProductDetail, DETAIL)).toBe(true);
+    expect(ok(StoreProductDetail, { ...DETAIL, description: null, images: [], variants: [] })).toBe(
+      true,
+    );
+  });
+
+  it('is strict and customer-safe at every level', () => {
+    const variant = DETAIL.variants[0]!;
+    for (const detail of [
+      { ...DETAIL, id: '0199a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b' },
+      { ...DETAIL, updatedAt: '2026-10-04T08:00:00.000Z' },
+      { ...DETAIL, variants: [{ ...variant, sku: 'ITE-OH-WB-M' }] },
+      { ...DETAIL, variants: [{ ...variant, stockQuantity: 3 }] },
+      { ...DETAIL, variants: [{ ...variant, id: 'x' }] },
+      { ...DETAIL, variants: [{ ...variant, availability: 'LOW_STOCK' }] },
+      { ...DETAIL, images: [{ url: '/a.jpg', alt: 'A', color: null, isPrimary: true }] },
+      { ...DETAIL, images: [{ url: '/a.jpg', alt: 'A' }] }, // color is required (nullable)
+      { ...DETAIL, images: [{ url: '/a.jpg', alt: 'A', color: 'Not A Slug' }] },
+    ]) {
+      expect(ok(StoreProductDetail, detail)).toBe(false);
+    }
+    const { description: _description, ...withoutDescription } = DETAIL;
+    expect(ok(StoreProductDetail, withoutDescription)).toBe(false);
   });
 });

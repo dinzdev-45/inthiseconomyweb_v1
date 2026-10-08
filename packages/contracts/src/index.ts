@@ -88,6 +88,7 @@ export {
   StoreAvailability,
   StoreCatalogFilters,
   StorePage,
+  StoreProductDetail,
   StoreProductListQuery,
   StoreProductListResponse,
   StoreProductParams,

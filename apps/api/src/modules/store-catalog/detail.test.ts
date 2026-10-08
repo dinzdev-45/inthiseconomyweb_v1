@@ -1,4 +1,4 @@
-import { StoreProductSummary } from '@ite/contracts';
+import { StoreProductDetail } from '@ite/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -32,7 +32,8 @@ describe('store-catalog-api: Active products only (by slug)', () => {
     ]);
     const res = await get(`/products/${product.slug}`);
     expect(res.headers['cache-control']).toBe('public, max-age=60');
-    const summary = StoreProductSummary.parse(c.ok(res));
+    // The detail: every summary field, plus description, images, and variants.
+    const summary = StoreProductDetail.parse(c.ok(res));
     expect(summary).toMatchObject({
       slug: product.slug,
       name: 'Slug Hoodie',
@@ -42,6 +43,8 @@ describe('store-catalog-api: Active products only (by slug)', () => {
     });
     expect(summary.colors).toHaveLength(2);
     expect(summary.image).not.toBeNull();
+    expect(summary.variants).toHaveLength(2);
+    expect(summary.images).toHaveLength(1);
   });
 
   it('Non-active product is not found', async () => {

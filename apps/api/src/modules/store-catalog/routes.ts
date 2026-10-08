@@ -2,8 +2,8 @@ import {
   StoreCatalogFilters,
   StoreProductListQuery,
   StoreProductListResponse,
+  StoreProductDetail,
   StoreProductParams,
-  StoreProductSummary,
 } from '@ite/contracts';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 
@@ -33,7 +33,7 @@ export const storeCatalogRoutes: FastifyPluginAsyncZod<{ catalog: StoreCatalogSe
 
   app.get(
     '/products/:slug',
-    { schema: { params: StoreProductParams, response: { 200: StoreProductSummary } } },
+    { schema: { params: StoreProductParams, response: { 200: StoreProductDetail } } },
     async (request, reply) => {
       const product = await catalog.get(request.params.slug);
       reply.header('cache-control', CACHE_CONTROL);
