@@ -82,17 +82,20 @@ test.describe('storefront-catalog: Catalog responsive layout and motion', () => 
       // Results stream in after the skeleton; the shift measurement covers that swap too.
       await expect(page.locator('main [data-result-count]')).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
-      // Every card's media frame has its final 4:5 ratio, whether an image or the placeholder.
-      const ratios = await page
-        .locator('main ul.grid:not([data-skeleton]) > li [data-media]')
-        .evaluateAll((frames) =>
-          frames
-            .filter((el) => !el.closest('[data-hover-image]'))
-            .map((el) => el.getBoundingClientRect())
-            .map((box) => box.width / box.height),
-        );
-      expect(ratios).toHaveLength(24);
-      for (const ratio of ratios) expect(ratio).toBeCloseTo(0.8, 2);
+      // Every media frame has its final 4:5 ratio, image or placeholder. Polled: a frame that is
+      // swapping from a failed image to the placeholder measures 0×0 for an instant.
+      await expect
+        .poll(() =>
+          page
+            .locator('main ul.grid:not([data-skeleton]) > li [data-media]')
+            .evaluateAll((frames) =>
+              frames
+                .filter((el) => !el.closest('[data-hover-image]'))
+                .map((el) => el.getBoundingClientRect())
+                .map((box) => Math.round((box.width / box.height) * 100) / 100),
+            ),
+        )
+        .toEqual(Array(24).fill(0.8));
       await page.waitForTimeout(1_000);
       const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
       expect(cls, `cumulative layout shift at ${viewport.width}px`).toBeLessThan(0.1);

@@ -2,7 +2,7 @@ import type { StoreProductSummary } from '@ite/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
-const { colorLabel, isAllowedImage, toProductSummary } = await import('./mapper.ts');
+const { colorLabel, toProductSummary } = await import('./mapper.ts');
 
 const idr = (amount: number) => ({ amount, currency: 'IDR' });
 const HOSTS = ['cdn.example.com'];
@@ -66,19 +66,6 @@ describe('catalog mapper', () => {
       ]),
     ).toBe('3 colors');
     expect(colorLabel([])).toBe('');
-  });
-
-  it.each([
-    ['/images/a.jpg', true],
-    ['https://cdn.example.com/a.jpg', true],
-    ['https://CDN.example.com/a.jpg', true],
-    ['https://cdn.example.com:8443/a.jpg', false],
-    ['https://evil.example.com/a.jpg', false],
-    ['https://cdn.example.com.evil.net/a.jpg', false],
-    ['http://cdn.example.com/a.jpg', false],
-    ['//cdn.example.com/a.jpg', false],
-  ])('allows %s → %s', (url, allowed) => {
-    expect(isAllowedImage(url, HOSTS)).toBe(allowed);
   });
 
   it('drops images that are missing or not on an allowed host', () => {

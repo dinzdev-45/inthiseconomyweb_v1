@@ -1,14 +1,9 @@
 import 'server-only';
 
-import {
-  Slug,
-  StoreCatalogFilters,
-  StoreProductListResponse,
-  StoreProductSummary,
-} from '@ite/contracts';
+import { StoreCatalogFilters, StoreProductListResponse } from '@ite/contracts';
 
 import { loadEnv } from '@/env';
-import { StoreApiError, storeGet } from '@/lib/api/store';
+import { storeGet } from '@/lib/api/store';
 
 import type { ProductSummary } from '../types.ts';
 import { toSearchParams, type CatalogState } from '../url-state.ts';
@@ -59,21 +54,4 @@ export function getCatalogFilters(): Promise<StoreCatalogFilters> {
   return storeGet('/api/v1/store/catalog/filters', StoreCatalogFilters, {
     revalidate: REVALIDATE_SECONDS,
   });
-}
-
-/**
- * One active product's card view model, or null when the slug is not an active product
- * (malformed slugs never reach the API). Other failures throw.
- */
-export async function getStoreProduct(slug: string): Promise<ProductSummary | null> {
-  if (!Slug.safeParse(slug).success) return null;
-  try {
-    const product = await storeGet(`/api/v1/store/products/${slug}`, StoreProductSummary, {
-      revalidate: REVALIDATE_SECONDS,
-    });
-    return toProductSummary(product, loadEnv().STOREFRONT_IMAGE_HOSTS);
-  } catch (error) {
-    if (error instanceof StoreApiError && error.status === 404) return null;
-    throw error;
-  }
 }

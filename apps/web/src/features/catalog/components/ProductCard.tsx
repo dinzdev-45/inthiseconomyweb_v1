@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
+import { FallbackImage } from '@/components/FallbackImage';
 import { formatMoney } from '@/lib/format-money';
 
 import type { ProductSummary } from '../types.ts';
-import { CardImage } from './CardImage.tsx';
 
 type HeadingLevel = 'h2' | 'h3' | 'h4';
 
@@ -27,7 +27,7 @@ type ProductCardProps = {
  *
  * Catalog cards (storefront-catalog design D6) may add "From" for a price range and a
  * "Sold out" text label inside the link; homepage cards set neither and render as before.
- * Images that are missing or fail to load show the placeholder (`CardImage`).
+ * Images that are missing or fail to load show the placeholder (`FallbackImage`).
  */
 export function ProductCard({
   product,
@@ -44,14 +44,14 @@ export function ProductCard({
     <article className="group">
       <Link href={`/products/${slug}`} className="block">
         <div className="relative">
-          <CardImage image={image} ratio={4 / 5} sizes={sizes} eager={eager} />
+          <FallbackImage image={image} ratio={4 / 5} sizes={sizes} eager={eager} />
           {swap ? (
             <div
               aria-hidden="true"
               data-hover-image
               className="absolute inset-0 opacity-0 transition-opacity duration-300 hover-fine:group-hover:opacity-100 hover-fine:group-focus-within:opacity-100"
             >
-              <CardImage image={hoverImage} ratio={4 / 5} sizes={sizes} />
+              <FallbackImage image={hoverImage} ratio={4 / 5} sizes={sizes} />
             </div>
           ) : null}
         </div>

@@ -4,8 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_STATE } from '../url-state.ts';
 
 vi.mock('server-only', () => ({}));
-const { getCatalogPage, getStoreProduct } = await import('./catalog.ts');
-const { StoreApiError } = await import('@/lib/api/store');
+const { getCatalogPage } = await import('./catalog.ts');
 
 const fetchMock = vi.fn<typeof fetch>();
 beforeEach(() => {
@@ -87,39 +86,5 @@ describe('catalog loaders', () => {
     await expect(getCatalogPage(DEFAULT_STATE, { withFilters: true })).rejects.toThrow(
       'fetch failed',
     );
-  });
-
-  it('getStoreProduct maps an active product', async () => {
-    fetchMock.mockResolvedValue(json(200, { ...summary(1), availability: 'SOLD_OUT' }));
-    expect(await getStoreProduct('product-1')).toMatchObject({
-      slug: 'product-1',
-      availability: 'SOLD_OUT',
-    });
-    expect(String(fetchMock.mock.calls[0]![0])).toBe(
-      'http://api.internal:4000/api/v1/store/products/product-1',
-    );
-  });
-
-  it('getStoreProduct returns null for 404 and malformed slugs, and throws otherwise', async () => {
-    fetchMock.mockResolvedValue(
-      json(
-        404,
-        {
-          type: 'about:blank',
-          title: 'Not Found',
-          status: 404,
-          detail: 'Product not found.',
-          requestId: 'r-1',
-          code: 'NOT_FOUND',
-        },
-        'application/problem+json',
-      ),
-    );
-    expect(await getStoreProduct('draft-product')).toBeNull();
-    expect(await getStoreProduct('Not A Slug/../x')).toBeNull();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    fetchMock.mockResolvedValue(json(500, {}));
-    await expect(getStoreProduct('product-1')).rejects.toBeInstanceOf(StoreApiError);
   });
 });

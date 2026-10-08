@@ -2,6 +2,8 @@ import 'server-only';
 
 import type { StoreProductSummary } from '@ite/contracts';
 
+import { isAllowedImage } from '@/lib/images';
+
 import type { Media, ProductSummary } from '../types.ts';
 
 /*
@@ -13,21 +15,6 @@ import type { Media, ProductSummary } from '../types.ts';
 /** Nominal 4:5 dimensions; cards render images with `fill`, so these only satisfy `Media`. */
 const CARD_WIDTH = 800;
 const CARD_HEIGHT = 1000;
-
-/**
- * Whether `next/image` may load `url`: a root-relative path (the storefront's own files), or an
- * https URL on one of the allowed hosts. Anything else shows the placeholder instead.
- */
-export function isAllowedImage(url: string, allowedHosts: readonly string[]): boolean {
-  if (url.startsWith('/')) return !url.startsWith('//');
-  if (!URL.canParse(url)) return false;
-  const parsed = new URL(url);
-  return (
-    parsed.protocol === 'https:' &&
-    parsed.port === '' &&
-    allowedHosts.includes(parsed.hostname.toLowerCase())
-  );
-}
 
 function toMedia(
   image: StoreProductSummary['image'],

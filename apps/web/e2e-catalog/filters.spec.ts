@@ -75,7 +75,8 @@ test.describe('storefront-catalog: Filters and sorting', () => {
     const names = await cardNames(page);
     expect(names.length).toBeGreaterThan(0);
     const assertView = async () => {
-      expect(await cardNames(page)).toEqual(names);
+      // Poll: right after a back navigation the previous view can still be on screen.
+      await expect.poll(() => cardNames(page)).toEqual(names);
       await expect(filters(page).getByLabel('Category')).toHaveValue('apparel');
       await expect(filters(page).getByLabel('In stock only')).toBeChecked();
       await expect(filters(page).getByLabel('Sort by')).toHaveValue('price-desc');

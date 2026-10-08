@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { productMetadata, searchMetadata, shopMetadata } from './seo.ts';
+import { searchMetadata, shopMetadata } from './seo.ts';
 import { DEFAULT_STATE } from './url-state.ts';
 
 describe('catalog metadata builders', () => {
@@ -35,15 +35,11 @@ describe('catalog metadata builders', () => {
     expect(meta.alternates?.canonical).toBe(canonical);
   });
 
-  it('search and the product placeholder are never indexed', () => {
+  it('search is never indexed', () => {
     expect(searchMetadata({ ...DEFAULT_STATE, q: 'hoodie' })).toMatchObject({
       title: 'Search: hoodie',
       robots: { index: false },
     });
     expect(searchMetadata(DEFAULT_STATE).title).toBe('Search');
-    expect(productMetadata('Zip Hoodie')).toMatchObject({
-      title: 'Zip Hoodie',
-      robots: { index: false },
-    });
   });
 });

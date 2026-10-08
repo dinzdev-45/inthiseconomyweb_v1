@@ -45,12 +45,3 @@ export function searchMetadata(state: CatalogState): Metadata {
     robots: { index: false, follow: true },
   };
 }
-
-/** The product page placeholder is never indexed. */
-export function productMetadata(name: string): Metadata {
-  return {
-    title: name,
-    description: `${name} from InThisEconomy. Full details are coming soon.`,
-    robots: { index: false, follow: true },
-  };
-}

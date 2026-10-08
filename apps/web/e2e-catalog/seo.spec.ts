@@ -53,7 +53,8 @@ test.describe('storefront-catalog: Catalog SEO', () => {
   });
 
   test('Search and placeholder pages are not indexed', async ({ page }) => {
-    for (const url of ['/search?q=hoodie', '/products/overdraft-hoodie']) {
+    // Product pages are indexable now; see the storefront-product-detail tests.
+    for (const url of ['/search', '/search?q=hoodie']) {
       expect((await head(page, url)).robots, url).toMatch(/noindex/);
     }
   });

@@ -1,42 +1,6 @@
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-import { openCatalog, resultCount } from './support.ts';
-
-/** Same rules as the homepage scan (e2e/quality.spec.ts): WCAG 2.2 A and AA, serious or critical. */
-async function seriousViolations(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'])
-    // The wordmark is a logotype; WCAG 1.4.3 exempts it from contrast minimums.
-    .exclude('[data-logotype]')
-    .analyze();
-  return results.violations
-    .filter((v) => v.impact === 'serious' || v.impact === 'critical')
-    .map(
-      (v) =>
-        `${v.id} (${v.impact}): ${v.nodes
-          .map((n) => n.target.join(' '))
-          .slice(0, 4)
-          .join(' | ')}`,
-    );
-}
-
-/** Tabs until `target` has focus (at most 150 presses), then checks the focus is visible. */
-async function tabTo(page: Page, target: Locator) {
-  for (let i = 0; i < 150; i++) {
-    await page.keyboard.press('Tab');
-    if (await target.evaluate((el) => el === document.activeElement)) {
-      const style = await target.evaluate((el) => {
-        const s = getComputedStyle(el);
-        return { outline: s.outlineStyle, width: parseFloat(s.outlineWidth) };
-      });
-      expect(style.outline).not.toBe('none');
-      expect(style.width).toBeGreaterThanOrEqual(2);
-      return;
-    }
-  }
-  throw new Error(`Could not reach ${target} with Tab`);
-}
+import { openCatalog, resultCount, seriousViolations, tabTo } from './support.ts';
 
 test.describe('storefront-catalog: Catalog accessibility', () => {
   test('Catalog accessibility scan', async ({ page }) => {
@@ -47,7 +11,6 @@ test.describe('storefront-catalog: Catalog accessibility', () => {
       '/shop?size=XXXL', // no results
       '/search',
       '/search?q=hoodie',
-      '/products/zip-hoodie',
     ]) {
       await page.goto(url);
       await expect(page.locator('main h1')).toBeVisible();
