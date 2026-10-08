@@ -249,6 +249,8 @@ model ProductVariant {
   size    Size           @relation(fields: [sizeId], references: [id], onDelete: Restrict)
   color   Color          @relation(fields: [colorId], references: [id], onDelete: Restrict)
   images  ProductImage[]
+  /// Guest cart lines holding this variant (removed with it).
+  cartLines CartLine[]
 
   /// One variant per size × color within a product (also serves product_id lookups).
   @@unique([productId, sizeId, colorId])
@@ -282,4 +284,39 @@ model ProductImage {
   @@index([productId, sortOrder])
   @@index([variantId])
   @@map("product_images")
+}
+
+/// A guest cart (store-cart-api spec). No customer data: identified only by a random token,
+/// stored as a keyed hash. Not admin-managed, so no attribution columns.
+model Cart {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  /// Hex HMAC-SHA-256 of the cart token (the token itself is never stored).
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  /// Last change + 30 days; a cart past this is treated as not found.
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  lines CartLine[]
+
+  @@map("carts")
+}
+
+/// One variant in a cart. Prices are never stored: they are read live from the catalog.
+model CartLine {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  variantId String   @map("variant_id") @db.Uuid
+  /// 1..10 (CHECK in migration).
+  quantity  Int
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  /// One line per variant in a cart (also serves cart_id lookups).
+  @@unique([cartId, variantId])
+  @@index([variantId])
+  @@map("cart_lines")
 }

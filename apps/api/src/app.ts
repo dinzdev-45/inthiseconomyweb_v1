@@ -23,6 +23,9 @@ import { createVariantService } from './modules/catalog/variants/service.ts';
 import { createReferenceRepository } from './modules/catalog/reference/repository.ts';
 import { referenceRoutes } from './modules/catalog/reference/routes.ts';
 import { createReferenceService } from './modules/catalog/reference/service.ts';
+import { createStoreCartRepository } from './modules/store-cart/repository.ts';
+import { storeCartRoutes } from './modules/store-cart/routes.ts';
+import { createStoreCartService } from './modules/store-cart/service.ts';
 import { createStoreCatalogRepository } from './modules/store-catalog/repository.ts';
 import { storeCatalogRoutes } from './modules/store-catalog/routes.ts';
 import { createStoreCatalogService } from './modules/store-catalog/service.ts';
@@ -107,6 +110,12 @@ export async function buildApp({
     storeCurrency: env.STORE_CURRENCY,
   });
   const storeCatalog = createStoreCatalogService({ repo: createStoreCatalogRepository(app.db) });
+  const storeCarts = createStoreCartService({
+    repo: createStoreCartRepository(app.db),
+    clock,
+    secret: env.SESSION_SECRET,
+    storeCurrency: env.STORE_CURRENCY,
+  });
 
   await app.register(healthRoutes);
   await registerZones(app, {
@@ -117,6 +126,7 @@ export async function buildApp({
       ...routes,
       store: [
         async (store) => store.register(storeCatalogRoutes, { catalog: storeCatalog }),
+        async (store) => store.register(storeCartRoutes, { carts: storeCarts }),
         ...(routes.store ?? []),
       ],
       admin: [

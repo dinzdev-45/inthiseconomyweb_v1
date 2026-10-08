@@ -64,6 +64,19 @@ export {
   VariantParams,
   VariantStatus,
 } from './catalog.ts';
+export {
+  AddCartItemRequest,
+  CART_LINE_MAX,
+  CART_QUANTITY_MAX,
+  CART_TOKEN_HEADER,
+  CartLineParams,
+  CartLineStatus,
+  CartToken,
+  CreateCartResponse,
+  StoreCart,
+  StoreCartLine,
+  UpdateCartItemRequest,
+} from './cart.ts';
 export { ErrorCode, FieldError, ProblemDetails } from './errors.ts';
 export { HealthResponse, ReadyResponse } from './health.ts';
 export {

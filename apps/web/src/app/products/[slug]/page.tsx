@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { ADD_FAILURE_MESSAGES, AddToCartForm, parseReason, type AddFailure } from '@/features/cart';
 import {
   ProductDetailView,
   productMetadata,
   resolveSelection,
+  selectionHref,
   sizeGuideFor,
 } from '@/features/product-detail';
 import { getProductDetail } from '@/features/product-detail/server/product';
@@ -24,12 +26,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  * The product detail page: server-rendered from the product and the URL's `color` and `size`;
  * the browser never calls the API. Anything but an active product is a 404. There is deliberately
  * no loading.tsx here: a loading boundary would start streaming with status 200 before the 404 is
- * known, and the spec requires the 404 status.
+ * known, and the spec requires the 404 status. The cart feature supplies the add-to-cart control.
  */
 export default async function ProductPage({ params, searchParams }: Props) {
   const product = await getProductDetail((await params).slug);
   if (!product) notFound();
-  const selection = resolveSelection(product, await searchParams);
+  const query = await searchParams;
+  const selection = resolveSelection(product, query);
   const sizeGuide = sizeGuideFor(selection.sizes.map((size) => size.code));
-  return <ProductDetailView product={product} selection={selection} sizeGuide={sizeGuide} />;
+  const failure = parseReason<AddFailure>(query.cart, ADD_FAILURE_MESSAGES);
+  const cartControl = (
+    <AddToCartForm
+      productSlug={product.slug}
+      colorSlug={selection.color.slug}
+      sizeCode={selection.size?.code ?? null}
+      soldOut={selection.availability === 'SOLD_OUT'}
+      returnTo={selectionHref(product.slug, selection.color.slug, selection.size?.code)}
+      {...(failure ? { failure } : {})}
+    />
+  );
+  return (
+    <ProductDetailView
+      product={product}
+      selection={selection}
+      sizeGuide={sizeGuide}
+      cartControl={cartControl}
+    />
+  );
 }

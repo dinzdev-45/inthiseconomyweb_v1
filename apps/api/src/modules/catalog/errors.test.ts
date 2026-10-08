@@ -72,7 +72,11 @@ afterAll(async () => {
 
 describe('catalog error codes', () => {
   it('covers every catalog code with 409 or 422', () => {
-    const catalogCodes = ErrorCode.options.slice(ErrorCode.options.indexOf('SLUG_EXISTS'));
+    // The catalog block of ErrorCode runs from SLUG_EXISTS to IMAGE_LIMIT (cart codes follow it).
+    const catalogCodes = ErrorCode.options.slice(
+      ErrorCode.options.indexOf('SLUG_EXISTS'),
+      ErrorCode.options.indexOf('IMAGE_LIMIT') + 1,
+    );
     expect(Object.keys(CATALOG_ERROR_STATUS).sort()).toEqual([...catalogCodes].sort());
     expect(catalogError('CURRENCY_MISMATCH', 'x')).toMatchObject({ status: 422 });
     expect(catalogError('VARIANT_MISMATCH', 'x')).toMatchObject({ status: 422 });

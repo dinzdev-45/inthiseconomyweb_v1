@@ -30,6 +30,11 @@ export const ErrorCode = z.enum([
   'INSUFFICIENT_STOCK',
   'CURRENCY_MISMATCH',
   'IMAGE_LIMIT',
+  // Guest cart (store-cart-api)
+  'CART_NOT_FOUND',
+  'VARIANT_UNAVAILABLE',
+  'QUANTITY_LIMIT',
+  'CART_FULL',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 
