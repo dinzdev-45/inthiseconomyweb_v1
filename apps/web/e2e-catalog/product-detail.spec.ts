@@ -50,6 +50,21 @@ test.describe('storefront-product-detail: Product page', () => {
       await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
     }
   });
+
+  test('Unreleased product page', async ({ page }) => {
+    // Overtime Jacket is in "Overtime", releasing 1 January 2099 at 10:00 WIB (fixtures.sql).
+    await openProduct(page, '/products/overtime-jacket');
+    await expect(price(page)).toHaveText(/^Rp\s1\.199\.000$/);
+    const release = page.locator('[data-price-block] [data-release]');
+    await expect(release).toContainText('Releases 1 January 2099 at 10:00 WIB');
+    await expect(release.locator('time')).toHaveAttribute('datetime', '2099-01-01T03:00:00.000Z');
+    await expect(release.getByRole('link', { name: 'Overtime' })).toHaveAttribute(
+      'href',
+      '/drops/overtime',
+    );
+    await expect(availability(page)).toHaveCount(0);
+    await expect(page.locator('[data-price-block]')).not.toContainText(/In stock|Sold out/);
+  });
 });
 
 test.describe('storefront-product-detail: Product gallery', () => {

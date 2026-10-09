@@ -7,7 +7,8 @@ export type DropSummary = {
   collection: string;
   /** e.g. "COST OF LIVING" */
   title: string;
-  status: 'live' | 'upcoming';
+  /** `past`: released before the current drop (the archive). */
+  status: 'live' | 'upcoming' | 'past';
   /** Release time as an ISO 8601 UTC timestamp; drives the upcoming state and a future countdown. */
   startsAt: string;
   image: Media | null;

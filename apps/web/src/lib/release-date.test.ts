@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatReleaseDate } from './format-release-date.ts';
+import { formatReleaseDate } from './release-date.ts';
 
 describe('formatReleaseDate', () => {
   it('formats in the store time zone (Jakarta) by default', () => {

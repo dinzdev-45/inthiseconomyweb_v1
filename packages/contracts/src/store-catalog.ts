@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { HexColor, ImageUrl, SizeCode, Slug } from './catalog.ts';
-import { Money } from './primitives.ts';
+import { Money, Timestamp } from './primitives.ts';
 
 /*
  * Public store catalog contracts (store-catalog-api spec). Separate from the admin catalog
@@ -38,6 +38,8 @@ export const StoreProductSummary = z.strictObject({
   colors: z.array(StoreColor),
   image: StoreImage.nullable(),
   secondaryImage: StoreImage.nullable(),
+  /** The release time while the product is unreleased (in a drop releasing later), else null. */
+  releaseAt: Timestamp.nullable().optional(),
 });
 export type StoreProductSummary = z.infer<typeof StoreProductSummary>;
 
@@ -52,6 +54,8 @@ export const StoreProductDetail = z.strictObject({
   description: z.string().nullable(),
   /** In display order; images of colors no ACTIVE variant uses are left out. */
   images: z.array(z.strictObject({ url: ImageUrl, alt: z.string(), color: Slug.nullable() })),
+  /** The published drop this product belongs to, if any. */
+  drop: z.strictObject({ slug: Slug, title: z.string() }).nullable().optional(),
   /** ACTIVE variants, by size display order, then color name. */
   variants: z.array(
     z.strictObject({

@@ -36,5 +36,7 @@ export function toProductDetail(
         color: image.color,
       })),
     variants: product.variants,
+    releaseAt: product.releaseAt ?? null,
+    drop: product.drop ?? null,
   };
 }

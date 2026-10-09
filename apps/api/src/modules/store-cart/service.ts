@@ -34,6 +34,7 @@ const errors = {
     ),
   stock: () => new DomainError('INSUFFICIENT_STOCK', 409, 'Not enough stock for this quantity.'),
   full: () => new DomainError('CART_FULL', 409, `A cart can hold at most ${CART_LINE_MAX} items.`),
+  notReleased: () => new DomainError('NOT_RELEASED', 409, 'This product is not released yet.'),
   lineNotFound: () => new DomainError('NOT_FOUND', 404, 'Cart line not found.'),
 };
 
@@ -75,7 +76,7 @@ export function createStoreCartService({
       await repo.touch(tx, cart.id, now, expiry(now));
       return cart.id;
     });
-    return toCart(await repo.view(cartId));
+    return toCart(await repo.view(cartId, clock.now()));
   }
 
   return {
@@ -93,14 +94,15 @@ export function createStoreCartService({
     async get(token: string | undefined): Promise<StoreCart> {
       const cart = await repo.findLive(tokenHash(token), clock.now());
       if (!cart) throw cartNotFound();
-      return toCart(await repo.view(cart.id));
+      return toCart(await repo.view(cart.id, clock.now()));
     },
 
     /** Adds a sellable variant, merging into its existing line. A rejected add changes nothing. */
     addItem(token: string | undefined, item: AddCartItemRequest): Promise<StoreCart> {
       return change(token, async (cartId, tx) => {
-        const variant = await repo.findSellableVariant(tx, item);
+        const variant = await repo.findSellableVariant(tx, item, clock.now());
         if (!variant) throw errors.unavailable();
+        if (variant.unreleased) throw errors.notReleased();
         const existing = await repo.findLineByVariant(tx, cartId, variant.variantId);
         const quantity = (existing?.quantity ?? 0) + item.quantity;
         if (quantity > CART_QUANTITY_MAX) throw errors.quantityLimit();
@@ -122,7 +124,7 @@ export function createStoreCartService({
     /** Sets a line's quantity. Lowering it is always allowed; raising it needs a sellable variant and stock. */
     updateItem(token: string | undefined, lineId: string, quantity: number): Promise<StoreCart> {
       return change(token, async (cartId, tx) => {
-        const line = await repo.findLine(tx, cartId, lineId);
+        const line = await repo.findLine(tx, cartId, lineId, clock.now());
         if (!line) throw errors.lineNotFound();
         if (quantity > line.quantity) {
           if (!line.sellable) throw errors.unavailable();
@@ -134,7 +136,7 @@ export function createStoreCartService({
 
     removeItem(token: string | undefined, lineId: string): Promise<StoreCart> {
       return change(token, async (cartId, tx) => {
-        const line = await repo.findLine(tx, cartId, lineId);
+        const line = await repo.findLine(tx, cartId, lineId, clock.now());
         if (!line) throw errors.lineNotFound();
         await repo.deleteLine(tx, line.id);
       });

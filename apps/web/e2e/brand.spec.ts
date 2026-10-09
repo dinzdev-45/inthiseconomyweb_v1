@@ -52,7 +52,6 @@ test('Brand accent usage', async ({ page }) => {
         style('section[aria-labelledby="hero-heading"] a[href="/drops"]').backgroundColor,
       ),
       manifesto: rgba(style('section[aria-labelledby="manifesto-heading"]').backgroundColor),
-      drop: rgba(style('section[data-drop-status]').backgroundColor),
       footer: rgba(style('body > footer').backgroundColor),
       page: rgba(style('body').backgroundColor),
     };
@@ -60,9 +59,18 @@ test('Brand accent usage', async ({ page }) => {
   expect(near(colors.wordmark, PALETTE.brand)).toBe(true);
   expect(near(colors.heroCta, PALETTE.brand)).toBe(true);
   expect(near(colors.manifesto, PALETTE.brand)).toBe(true);
-  expect(near(colors.drop, PALETTE.ink)).toBe(true);
   expect(near(colors.footer, PALETTE.ink)).toBe(true);
   expect(near(colors.page, PALETTE.paper)).toBe(true);
+
+  // Without an API the homepage has no drop section; the drop feature is on the fixtures page.
+  await page.goto('/e2e-fixtures/catalog');
+  await installColorHelpers(page);
+  const drop = await page.evaluate(() =>
+    (window as unknown as { __rgba: (c: string) => number[] }).__rgba(
+      getComputedStyle(document.querySelector('section[data-drop-status]')!).backgroundColor,
+    ),
+  );
+  expect(near(drop, PALETTE.ink)).toBe(true);
 });
 
 test('Brand Brown only on large text', async ({ page }) => {

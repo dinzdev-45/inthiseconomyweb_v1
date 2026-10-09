@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { cta } from '@/components/cta';
 import { MediaFrame } from '@/components/MediaFrame';
 
-import { formatReleaseDate } from '../format-release-date.ts';
+import { formatReleaseDate } from '@/lib/release-date';
 import type { DropSummary } from '../types.ts';
+import { Countdown } from './Countdown.tsx';
 
 type DropFeatureProps = {
   /** The drop to feature; null renders nothing (the homepage omits the section). */
@@ -14,8 +15,8 @@ type DropFeatureProps = {
 
 /**
  * Editorial feature for one drop (design D6). Live: "Now live" plus an explore
- * link. Upcoming: "Upcoming", the release date, and a reserved countdown area
- * (no timer in this change). Server Component with no client JavaScript.
+ * link. Upcoming: "Upcoming", the release date, and the live countdown (a client island) in
+ * the reserved countdown area.
  */
 export function DropFeature({ drop, headingId = 'drop-heading' }: DropFeatureProps) {
   if (!drop) return null;
@@ -62,13 +63,9 @@ export function DropFeature({ drop, headingId = 'drop-heading' }: DropFeaturePro
               EXPLORE THE COLLECTION
             </Link>
           ) : (
-            // Reserved for a later client-side countdown; intentionally empty in this change.
-            <div
-              role="timer"
-              aria-label="Countdown to release"
-              data-countdown
-              className="min-h-16 border-t border-brand"
-            />
+            <div className="min-h-16 border-t border-brand pt-4">
+              <Countdown releaseAt={drop.startsAt} tone="dark" />
+            </div>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { FallbackImage } from '@/components/FallbackImage';
+import { formatReleaseDate } from '@/lib/release-date';
 import { formatMoney } from '@/lib/format-money';
 
 import type { ProductSummary } from '../types.ts';
@@ -36,7 +37,8 @@ export function ProductCard({
   eager = false,
   wrap = false,
 }: ProductCardProps) {
-  const { slug, name, color, price, priceMax, availability, image, hoverImage } = product;
+  const { slug, name, color, price, priceMax, availability, releaseAt, image, hoverImage } =
+    product;
   const isRange = priceMax !== undefined && priceMax.amount !== price.amount;
   const swap = image !== null && hoverImage !== null;
 
@@ -67,7 +69,12 @@ export function ProductCard({
           </p>
         </div>
         {/* Text, inside the link, so it is part of the accessible name (never color alone). */}
-        {availability === 'SOLD_OUT' ? (
+        {releaseAt ? (
+          <p className="mt-1 text-right text-label text-ink uppercase" data-release>
+            Releases {formatReleaseDate(releaseAt)}
+          </p>
+        ) : null}
+        {availability === 'SOLD_OUT' && !releaseAt ? (
           <p className="mt-1 text-right text-label text-ink uppercase">Sold out</p>
         ) : null}
       </Link>

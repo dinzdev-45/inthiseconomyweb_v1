@@ -4,7 +4,7 @@ import { isSlugConflict } from './errors.ts';
 export const SLUG_MAX_LENGTH = 80;
 
 /** Slug used when a name has no letters or digits left after slugifying. */
-export type SlugFallback = 'product' | 'category' | 'color';
+export type SlugFallback = 'product' | 'category' | 'color' | 'drop';
 
 /** Cuts a slug to `max` characters without leaving a trailing hyphen. */
 function truncate(slug: string, max: number): string {

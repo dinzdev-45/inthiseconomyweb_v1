@@ -6,6 +6,7 @@ export type NavItem = { href: string; label: string; permission: Permission };
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/', label: 'Dashboard', permission: 'admin:access' },
   { href: '/catalog/products', label: 'Products', permission: 'catalog:read' },
+  { href: '/catalog/drops', label: 'Drops', permission: 'catalog:read' },
   { href: '/catalog/categories', label: 'Categories', permission: 'catalog:read' },
   { href: '/catalog/sizes', label: 'Sizes', permission: 'catalog:read' },
   { href: '/catalog/colors', label: 'Colors', permission: 'catalog:read' },

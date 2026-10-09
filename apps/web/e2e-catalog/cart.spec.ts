@@ -38,6 +38,13 @@ test.describe('storefront-cart: Add to cart', () => {
     await expect(addButton(page)).toHaveText('Sold out');
   });
 
+  test('Unreleased product cannot be added from its page', async ({ page }) => {
+    await openProduct(page, '/products/overtime-jacket?color=black&size=M');
+    await expect(addButton(page)).toBeDisabled();
+    await expect(addButton(page)).toHaveText('Releases 1 January 2099 at 10:00 WIB');
+    await expect(page.locator('[data-add-to-cart] form')).toHaveCount(0);
+  });
+
   test('Add fails', async ({ page }) => {
     // Filler Tee 01 has stock 10: fill the line to the limit, then add once more.
     await add(page, '/products/filler-tee-01?color=white&size=S');
@@ -169,13 +176,13 @@ test.describe('storefront-cart: Header cart count', () => {
     await add(page, '/products/zip-hoodie?color=stone-grey&size=S');
     await page.goto('/');
     await expect(cartLink(page)).toHaveAccessibleName(named('1 item'));
-    // The build this suite runs still prerenders the homepage, fully static.
+    // The build this suite runs still prerenders the homepage (revalidated every 5 minutes).
     const manifest = JSON.parse(
       readFileSync(
         fileURLToPath(new URL('../.next/prerender-manifest.json', import.meta.url)),
         'utf8',
       ),
     ) as { routes: Record<string, { initialRevalidateSeconds: number | false }> };
-    expect(manifest.routes['/']?.initialRevalidateSeconds).toBe(false);
+    expect(manifest.routes['/']?.initialRevalidateSeconds).toBe(300);
   });
 });

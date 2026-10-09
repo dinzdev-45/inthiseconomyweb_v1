@@ -7,6 +7,7 @@ import {
   type StoreProductSummary,
 } from '@ite/contracts';
 
+import type { Clock } from '../../clock.ts';
 import { DomainError } from '../../errors.ts';
 import { toPrice } from '../catalog/money.ts';
 import type { StoreCatalogRepository, StoreProductExtras, StoreProductRow } from './repository.ts';
@@ -30,12 +31,19 @@ function toSummary(row: StoreProductRow, extras: StoreProductExtras): StoreProdu
     availability: row.inStock ? 'IN_STOCK' : 'SOLD_OUT',
     colors: extras.colors.map(toColor),
     image: extras.image,
+    releaseAt: row.releaseAt ? row.releaseAt.toISOString() : null,
     secondaryImage: extras.secondaryImage,
   };
 }
 
 /** The public, read-only catalog. Visibility and pricing rules live here and in the repository. */
-export function createStoreCatalogService({ repo }: { repo: StoreCatalogRepository }) {
+export function createStoreCatalogService({
+  repo,
+  clock,
+}: {
+  repo: StoreCatalogRepository;
+  clock: Clock;
+}) {
   return {
     async list(query: StoreProductListQuery): Promise<StoreProductListResponse> {
       const { rows, total } = await repo.page(
@@ -49,6 +57,7 @@ export function createStoreCatalogService({ repo }: { repo: StoreCatalogReposito
         query.sort,
         STORE_PAGE_SIZE,
         (query.page - 1) * STORE_PAGE_SIZE,
+        clock.now(),
       );
       const extras = await repo.extras(rows.map((row) => row.id));
       return {
@@ -65,13 +74,14 @@ export function createStoreCatalogService({ repo }: { repo: StoreCatalogReposito
      * same 404, so a hidden product cannot be told apart from a missing one.
      */
     async get(slug: string): Promise<StoreProductDetail> {
-      const { rows } = await repo.page({ slug }, 'newest', 1, 0);
+      const { rows } = await repo.page({ slug }, 'newest', 1, 0, clock.now());
       const row = rows[0];
       const detail = row ? await repo.detail(row.id) : null;
       if (!row || !detail) throw new DomainError('NOT_FOUND', 404, 'Product not found.');
-      const { description, images, variants, ...extras } = detail;
+      const { description, images, variants, drop, ...extras } = detail;
       return {
         ...toSummary(row, extras),
+        drop,
         description,
         images,
         variants: variants.map((variant) => ({
@@ -87,8 +97,15 @@ export function createStoreCatalogService({ repo }: { repo: StoreCatalogReposito
       };
     },
 
+    /** A drop's ACTIVE products in the drop's order, released or not (the drop page). */
+    async dropProducts(dropId: string): Promise<StoreProductSummary[]> {
+      const { rows } = await repo.page({ dropId }, 'drop', 100, 0, clock.now());
+      const extras = await repo.extras(rows.map((row) => row.id));
+      return rows.map((row) => toSummary(row, extras.get(row.id) ?? NO_EXTRAS));
+    },
+
     async filters(): Promise<StoreCatalogFilters> {
-      const { categories, sizes, colors } = await repo.filterOptions();
+      const { categories, sizes, colors } = await repo.filterOptions(clock.now());
       return { categories, sizes, colors: colors.map(toColor) };
     },
   };

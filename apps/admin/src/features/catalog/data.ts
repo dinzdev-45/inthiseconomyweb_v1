@@ -1,6 +1,8 @@
 import 'server-only';
 
 import {
+  AdminDrop,
+  AdminDropListResponse,
   CatalogSettings,
   CategoryListResponse,
   ColorListResponse,
@@ -90,6 +92,21 @@ export async function loadProductPage(
 export async function getProduct(id: string): Promise<ProductDetail | null> {
   try {
     return await apiGetForPage(`${ADMIN}/products/${encodeURIComponent(id)}`, ProductDetail);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
+    throw error;
+  }
+}
+
+/** Drops, newest release first. */
+export function listDrops() {
+  return apiGetForPage(`${ADMIN}/drops`, AdminDropListResponse);
+}
+
+/** A drop with its products, or null when no drop has this id (including a malformed id). */
+export async function getDrop(id: string): Promise<AdminDrop | null> {
+  try {
+    return await apiGetForPage(`${ADMIN}/drops/${encodeURIComponent(id)}`, AdminDrop);
   } catch (error) {
     if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
     throw error;

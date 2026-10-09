@@ -42,6 +42,7 @@ const UNIQUE_CONSTRAINTS: Record<string, { code: CatalogErrorCode; detail: strin
   products_slug_key: { code: 'SLUG_EXISTS', detail: 'Another product already uses this slug.' },
   categories_slug_key: { code: 'SLUG_EXISTS', detail: 'Another category already uses this slug.' },
   colors_slug_key: { code: 'SLUG_EXISTS', detail: 'Another color already uses this slug.' },
+  drops_slug_key: { code: 'SLUG_EXISTS', detail: 'Another drop already uses this slug.' },
   sizes_code_key: { code: 'CODE_EXISTS', detail: 'Another size already uses this code.' },
   product_variants_sku_key: {
     code: 'SKU_EXISTS',
@@ -117,6 +118,12 @@ function violationOf(error: unknown): Violation | undefined {
   const message = cause?.originalMessage;
   const quoted = typeof message === 'string' ? /constraint "([^"]+)"/.exec(message) : null;
   return quoted?.[1] ? { kind, constraint: quoted[1] } : undefined;
+}
+
+/** The name of the unique constraint a Prisma error violated, if it is one. */
+export function uniqueViolationOf(error: unknown): string | undefined {
+  const violation = violationOf(error);
+  return violation?.kind === 'unique' ? violation.constraint : undefined;
 }
 
 /**

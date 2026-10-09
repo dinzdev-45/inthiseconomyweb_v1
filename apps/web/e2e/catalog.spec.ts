@@ -63,5 +63,5 @@ test('renders live and upcoming drop states', async ({ page }) => {
   );
   const upcoming = page.locator('[data-fixture="drop-upcoming"] section');
   await expect(upcoming.locator('time')).toHaveAttribute('datetime', '2026-11-20T03:00:00.000Z');
-  await expect(upcoming.getByRole('timer', { name: 'Countdown to release' })).toBeAttached();
+  await expect(upcoming.getByRole('timer', { name: 'Time until release' })).toBeAttached();
 });

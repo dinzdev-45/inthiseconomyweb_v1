@@ -1,3 +1,5 @@
+import { formatReleaseDateTime } from '@/lib/release-date';
+
 import { addToCart } from '../actions.ts';
 import { ADD_FAILURE_MESSAGES, type AddFailure } from '../outcome.ts';
 
@@ -11,6 +13,8 @@ type AddToCartFormProps = {
   sizeCode: string | null;
   /** The selected variant is sold out. */
   soldOut: boolean;
+  /** When the product releases (ISO 8601), or null once released. */
+  releaseAt?: string | null;
   /** The product page with its selection, to come back to when the add fails. */
   returnTo: string;
   /** Why the last add failed (from the `cart` search param). */
@@ -20,13 +24,15 @@ type AddToCartFormProps = {
 /**
  * "Add to cart" for the selected variant (storefront-cart spec): a plain form posting to a Server
  * Action, so it works without client JavaScript. Unavailable, with the reason as its text, until
- * a size is chosen or when the variant is sold out.
+ * a size is chosen, when the variant is sold out, or, whatever the selection, until the product
+ * releases.
  */
 export function AddToCartForm({
   productSlug,
   colorSlug,
   sizeCode,
   soldOut,
+  releaseAt = null,
   returnTo,
   failure,
 }: AddToCartFormProps) {
@@ -36,6 +42,16 @@ export function AddToCartForm({
     </p>
   ) : null;
 
+  if (releaseAt) {
+    return (
+      <div data-add-to-cart>
+        <button type="button" disabled className={`${button} bg-sand/60 text-ink/70`}>
+          Releases {formatReleaseDateTime(releaseAt)}
+        </button>
+        {message}
+      </div>
+    );
+  }
   if (!sizeCode || soldOut) {
     return (
       <div data-add-to-cart>

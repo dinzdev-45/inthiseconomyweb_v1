@@ -26,4 +26,6 @@ export type ProductSummary = {
   availability?: 'IN_STOCK' | 'SOLD_OUT';
   /** Catalog only: the highest price; when it differs from `price` the card reads "From". */
   priceMax?: Money;
+  /** Catalog only: set while the product is unreleased; the card then says when it releases. */
+  releaseAt?: string;
 };

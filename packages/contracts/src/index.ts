@@ -94,6 +94,25 @@ export {
   StoreOrder,
   StoreOrderLine,
 } from './checkout.ts';
+export {
+  AdminDrop,
+  AdminDropListItem,
+  AdminDropListResponse,
+  AdminDropProduct,
+  CreateDropRequest,
+  DROP_PRODUCT_MAX,
+  DropCandidate,
+  DropCandidatesQuery,
+  DropCandidatesResponse,
+  DropImage,
+  DropStatus,
+  SetDropProductsRequest,
+  StoreDropDetail,
+  StoreDropStatus,
+  StoreDropsOverview,
+  StoreDropSummary,
+  UpdateDropRequest,
+} from './drops.ts';
 export { ErrorCode, FieldError, ProblemDetails } from './errors.ts';
 export { HealthResponse, ReadyResponse } from './health.ts';
 export {

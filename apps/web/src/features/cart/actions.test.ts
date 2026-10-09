@@ -193,6 +193,7 @@ describe('updateLine and removeLine', () => {
 describe('cart outcomes', () => {
   it('maps unknown codes to failed, and only allows product page return paths', () => {
     expect(addFailure(undefined)).toBe('failed');
+    expect(addFailure('NOT_RELEASED')).toBe('notReleased');
     expect(safeReturnTo('/products/tee?color=black&size=M', 'tee')).toBe(
       '/products/tee?color=black&size=M',
     );

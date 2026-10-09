@@ -26,8 +26,8 @@ const section = (page: Page, headingId: string) =>
 test('Homepage section order', async ({ page }) => {
   await page.goto('/');
   expect(await sectionLabels(page)).toEqual([
+    // No drop section: this suite runs without an API (the catalog suite covers the drop).
     'IN THIS ECONOMY',
-    'COLLECTION 001 COST OF LIVING',
     'Featured',
     'PRICED IN',
     'Shop the look',
@@ -47,7 +47,7 @@ test('Heading structure', async ({ page }) => {
     .evaluateAll((sections) =>
       sections.map((s) => document.getElementById(s.getAttribute('aria-labelledby')!)!.tagName),
     );
-  expect(levels).toEqual(['H1', 'H2', 'H2', 'H2', 'H2', 'H2', 'H2', 'H2', 'H2']);
+  expect(levels).toEqual(['H1', 'H2', 'H2', 'H2', 'H2', 'H2', 'H2', 'H2']);
 });
 
 test('Hero content', async ({ page }) => {

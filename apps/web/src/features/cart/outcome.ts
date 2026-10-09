@@ -5,14 +5,16 @@ import type { ErrorCode } from '@ite/contracts';
  * product page with `cart=<reason>`; cart page changes land on `/cart?status=<status>`.
  */
 
-export type AddFailure = 'unavailable' | 'stock' | 'limit' | 'full' | 'failed';
-export type CartStatus = 'updated' | 'removed' | Exclude<AddFailure, 'full'>;
+export type AddFailure = 'unavailable' | 'notReleased' | 'stock' | 'limit' | 'full' | 'failed';
+export type CartStatus = 'updated' | 'removed' | Exclude<AddFailure, 'full' | 'notReleased'>;
 
 /** Why an add failed, from the API's problem code (anything unexpected is "failed"). */
 export function addFailure(code: ErrorCode | undefined): AddFailure {
   switch (code) {
     case 'VARIANT_UNAVAILABLE':
       return 'unavailable';
+    case 'NOT_RELEASED':
+      return 'notReleased';
     case 'INSUFFICIENT_STOCK':
       return 'stock';
     case 'QUANTITY_LIMIT':
@@ -27,11 +29,13 @@ export function addFailure(code: ErrorCode | undefined): AddFailure {
 /** Why a cart page change failed. */
 export function changeFailure(code: ErrorCode | undefined): CartStatus {
   const reason = addFailure(code);
+  if (reason === 'notReleased') return 'unavailable';
   return reason === 'full' ? 'failed' : reason;
 }
 
 export const ADD_FAILURE_MESSAGES: Record<AddFailure, string> = {
   unavailable: 'This item is no longer available in that color and size.',
+  notReleased: 'This item isn’t released yet.',
   stock: 'There isn’t enough stock to add another one.',
   limit: 'You already have the most of this item a cart can hold (10).',
   full: 'Your cart is full. Remove something to add this item.',

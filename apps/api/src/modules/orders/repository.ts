@@ -1,5 +1,6 @@
 import type { OrderStatus, PrismaClient } from '@ite/db';
 
+import { unreleased } from '../drops/release.ts';
 import type { Tx } from '../store-cart/repository.ts';
 
 /** What placing an order writes (lines are copies of the cart view rows). */
@@ -46,13 +47,14 @@ export function createOrderRepository(db: PrismaClient) {
      * Takes `quantity` from a sellable variant's stock, atomically: zero rows means it is no longer
      * ACTIVE or has too little stock. Attribution is left alone (orders are not staff changes).
      */
-    async takeStock(tx: Tx, variantId: string, quantity: number): Promise<boolean> {
+    async takeStock(tx: Tx, variantId: string, quantity: number, now: Date): Promise<boolean> {
       const updated = await tx.$executeRaw`
         UPDATE product_variants v
         SET stock_quantity = v.stock_quantity - ${quantity}::integer
         FROM products p
         WHERE v.id = ${variantId}::uuid AND p.id = v.product_id
           AND v.status = 'ACTIVE' AND p.status = 'ACTIVE'
+          AND NOT ${unreleased('p', now)}
           AND v.stock_quantity >= ${quantity}::integer
       `;
       return updated === 1;
