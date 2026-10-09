@@ -11,6 +11,7 @@ import type { Clock } from '../../clock.ts';
 import { DomainError } from '../../errors.ts';
 import type { CartViewRow, StoreCartRepository } from './repository.ts';
 import { CART_TTL_MS, generateCartToken, hashCartToken } from './token.ts';
+import { toStoreCart } from './view.ts';
 
 /*
  * Guest carts (store-cart-api spec, guest-cart design D3). The server owns every rule: which
@@ -55,27 +56,7 @@ export function createStoreCartService({
     return hashCartToken(secret, token!);
   }
 
-  function toCart(rows: CartViewRow[]): StoreCart {
-    const lines = rows.map((row) => ({
-      id: row.id,
-      product: { slug: row.productSlug, name: row.productName, image: row.image },
-      color: { slug: row.colorSlug, name: row.colorName },
-      size: { code: row.sizeCode, label: row.sizeLabel },
-      quantity: row.quantity,
-      unitPrice: { amount: row.unitAmount, currency: row.currency },
-      lineTotal: { amount: row.unitAmount * row.quantity, currency: row.currency },
-      status: row.status,
-    }));
-    const counted = lines.filter((line) => line.status === 'AVAILABLE');
-    return {
-      lines,
-      itemCount: counted.reduce((sum, line) => sum + line.quantity, 0),
-      subtotal: {
-        amount: counted.reduce((sum, line) => sum + line.lineTotal.amount, 0),
-        currency: storeCurrency,
-      },
-    };
-  }
+  const toCart = (rows: CartViewRow[]) => toStoreCart(rows, storeCurrency);
 
   /** Runs a cart change on the locked cart, then returns the cart as it is now. */
   async function change(

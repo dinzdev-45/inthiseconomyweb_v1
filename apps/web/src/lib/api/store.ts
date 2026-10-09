@@ -10,6 +10,8 @@ export class StoreApiError extends Error {
   readonly status: number;
   readonly code: ErrorCode | undefined;
   readonly requestId: string | undefined;
+  /** The problem details the API sent, if any (field errors live in `problem.errors`). */
+  readonly problem: ProblemDetails | undefined;
 
   constructor(status: number, problem?: ProblemDetails) {
     super(problem?.detail ?? `Store API request failed with status ${status}.`);
@@ -17,6 +19,7 @@ export class StoreApiError extends Error {
     this.status = status;
     this.code = problem?.code;
     this.requestId = problem?.requestId;
+    this.problem = problem;
   }
 }
 
@@ -65,7 +68,11 @@ export async function storeRequest<S extends z.ZodType>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: `/api/v1/store/${string}`,
   schema: S,
-  { cartToken, body }: { cartToken?: string; body?: unknown } = {},
+  {
+    cartToken,
+    body,
+    headers = {},
+  }: { cartToken?: string; body?: unknown; headers?: Record<string, string> } = {},
 ): Promise<z.infer<S>> {
   const response = await fetch(`${loadEnv().API_URL}${path}`, {
     method,
@@ -73,6 +80,7 @@ export async function storeRequest<S extends z.ZodType>(
       accept: 'application/json',
       ...(body === undefined ? {} : { 'content-type': 'application/json' }),
       ...(cartToken === undefined ? {} : { [CART_TOKEN_HEADER]: cartToken }),
+      ...headers,
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     cache: 'no-store',

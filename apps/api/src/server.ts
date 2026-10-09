@@ -42,3 +42,6 @@ try {
   app.log.fatal({ err: error }, 'failed to start');
   process.exit(1);
 }
+
+// Expire unpaid orders while this instance runs (stopped by app.close() on shutdown).
+app.orderSweeper.start();

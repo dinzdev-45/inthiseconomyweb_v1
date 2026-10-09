@@ -44,6 +44,9 @@ describe('storefront-cart: Cart page', () => {
       within(gone!).getByRole('button', { name: 'Remove Gone Jacket, Black, M' }),
     ).toBeDefined();
     expect(within(available!).queryByText(/No longer available/)).toBeNull();
+    // Checkout waits until the flagged line is fixed.
+    expect(screen.getByText('Remove or update the items marked above to check out.')).toBeDefined();
+    expect(screen.queryByRole('link', { name: 'Checkout' })).toBeNull();
     // The subtotal is the API's, which leaves the unavailable line out.
     expect(container.querySelector('[data-subtotal]')!.textContent).toMatch(/Rp\s1\.398\.000$/);
   });
@@ -60,6 +63,11 @@ describe('CartView', () => {
     expect(screen.getByRole('status').textContent).toBe(
       'There isn’t enough stock for that quantity.',
     );
+  });
+
+  it('offers Checkout when every line can be bought', () => {
+    render(<CartView cart={{ lines: [line()], itemCount: 2, subtotal: idr(139_800_000) }} />);
+    expect(screen.getByRole('link', { name: 'Checkout' }).getAttribute('href')).toBe('/checkout');
   });
 
   it('labels each quantity control with its product, color, and size', () => {

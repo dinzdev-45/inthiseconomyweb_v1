@@ -47,13 +47,19 @@ BEGIN
   END LOOP;
 END $$;
 
--- Nineteen plain tees, the oldest fixtures: one white size S, in stock, 300k + 10k steps.
+-- Eighteen plain tees, the oldest fixtures: one white size S, in stock, 300k + 10k steps.
 SELECT pg_temp.fixture(
   'filler-tee-' || lpad(n::text, 2, '0'), 'Filler Tee ' || lpad(n::text, 2, '0'), 'apparel',
   300000 + n * 10000,
   jsonb_build_array(jsonb_build_object('size', 'S', 'color', 'white', 'stock', 10)),
   jsonb_build_array(jsonb_build_object('url', '/images/products/filler-tee/front.jpg', 'alt', 'Filler Tee, front view'))
-) FROM generate_series(1, 19) AS n;
+) FROM generate_series(1, 18) AS n;
+
+-- Checkout tests buy this tee (stock 50), so no other test's stock changes. Same slot, price, and
+-- category as the nineteenth plain tee it replaces, so the catalog order holds.
+SELECT pg_temp.fixture('checkout-tee', 'Checkout Tee', 'apparel', 490000,
+  '[{"size": "S", "color": "white", "stock": 50}]',
+  '[{"url": "/images/products/checkout-tee/front.jpg", "alt": "Checkout Tee, front view"}]');
 
 -- One size, in the slot of the twentieth tee (same activation hour, so the catalog order holds).
 SELECT pg_temp.fixture('allowance-cap', 'Allowance Cap', 'accessories', 289000,

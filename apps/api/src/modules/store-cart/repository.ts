@@ -1,7 +1,7 @@
 import type { CartLineStatus } from '@ite/contracts';
 import type { PrismaClient } from '@ite/db';
 
-type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
+export type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
 /** A sellable variant (ACTIVE product, ACTIVE variant) and its stock. */
 export type SellableVariant = { variantId: string; stock: number };
@@ -12,6 +12,8 @@ export type LockedLine = { id: string; quantity: number; sellable: boolean; stoc
 /** One line of the cart view, with price and status computed in SQL (guest-cart design D4). */
 export type CartViewRow = {
   id: string;
+  /** Internal only (checkout decrements this variant's stock); never part of a response. */
+  variantId: string;
   quantity: number;
   productSlug: string;
   productName: string;
@@ -118,10 +120,13 @@ export function createStoreCartRepository(db: PrismaClient) {
       return tx.cartLine.delete({ where: { id: lineId } });
     },
 
-    /** The cart's lines in the order they were added, priced and flagged now (one statement). */
-    view(cartId: string): Promise<CartViewRow[]> {
-      return db.$queryRaw<CartViewRow[]>`
-        SELECT l.id, l.quantity,
+    /**
+     * The cart's lines in the order they were added, priced and flagged now (one statement).
+     * Pass a transaction to read inside it (checkout does).
+     */
+    view(cartId: string, client: Pick<Tx, '$queryRaw'> = db): Promise<CartViewRow[]> {
+      return client.$queryRaw<CartViewRow[]>`
+        SELECT l.id, l.variant_id AS "variantId", l.quantity,
                p.slug AS "productSlug", p.name AS "productName", p.currency,
                c.slug AS "colorSlug", c.name AS "colorName",
                s.code AS "sizeCode", s.label AS "sizeLabel",

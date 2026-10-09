@@ -23,6 +23,10 @@ import { createVariantService } from './modules/catalog/variants/service.ts';
 import { createReferenceRepository } from './modules/catalog/reference/repository.ts';
 import { referenceRoutes } from './modules/catalog/reference/routes.ts';
 import { createReferenceService } from './modules/catalog/reference/service.ts';
+import { createOrderRepository } from './modules/orders/repository.ts';
+import { orderRoutes } from './modules/orders/routes.ts';
+import { createOrderService } from './modules/orders/service.ts';
+import { createOrderSweeper, type OrderSweeper } from './modules/orders/sweeper.ts';
 import { createStoreCartRepository } from './modules/store-cart/repository.ts';
 import { storeCartRoutes } from './modules/store-cart/routes.ts';
 import { createStoreCartService } from './modules/store-cart/service.ts';
@@ -40,6 +44,13 @@ import securityHeaders from './plugins/security-headers.ts';
 import { createCursorCodec } from './pagination.ts';
 import { healthRoutes } from './routes/health.ts';
 import { registerZones, type ZoneRoutes } from './zones.ts';
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    /** Expires unpaid orders; started by server.ts only. */
+    orderSweeper: OrderSweeper;
+  }
+}
 
 export type BuildAppOptions = {
   env: Env;
@@ -110,12 +121,26 @@ export async function buildApp({
     storeCurrency: env.STORE_CURRENCY,
   });
   const storeCatalog = createStoreCatalogService({ repo: createStoreCatalogRepository(app.db) });
+  const storeCartRepository = createStoreCartRepository(app.db);
   const storeCarts = createStoreCartService({
-    repo: createStoreCartRepository(app.db),
+    repo: storeCartRepository,
     clock,
     secret: env.SESSION_SECRET,
     storeCurrency: env.STORE_CURRENCY,
   });
+
+  const orders = createOrderService({
+    orders: createOrderRepository(app.db),
+    carts: storeCartRepository,
+    clock,
+    secret: env.SESSION_SECRET,
+    storeCurrency: env.STORE_CURRENCY,
+    shipping: { flatFee: env.SHIPPING_FLAT_FEE, freeThreshold: env.FREE_SHIPPING_THRESHOLD },
+  });
+  // The unpaid-order sweeper is created here but started only by server.ts (design D5).
+  const orderSweeper = createOrderSweeper({ orders, log: app.log });
+  app.decorate('orderSweeper', orderSweeper);
+  app.addHook('onClose', async () => orderSweeper.stop());
 
   await app.register(healthRoutes);
   await registerZones(app, {
@@ -127,6 +152,7 @@ export async function buildApp({
       store: [
         async (store) => store.register(storeCatalogRoutes, { catalog: storeCatalog }),
         async (store) => store.register(storeCartRoutes, { carts: storeCarts }),
+        async (store) => store.register(orderRoutes, { orders }),
         ...(routes.store ?? []),
       ],
       admin: [

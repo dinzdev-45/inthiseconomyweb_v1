@@ -245,12 +245,14 @@ model ProductVariant {
   createdBy   AdminUser? @relation("ProductVariantCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy   AdminUser? @relation("ProductVariantUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
-  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
-  size    Size           @relation(fields: [sizeId], references: [id], onDelete: Restrict)
-  color   Color          @relation(fields: [colorId], references: [id], onDelete: Restrict)
-  images  ProductImage[]
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  size       Size           @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  color      Color          @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  images     ProductImage[]
   /// Guest cart lines holding this variant (removed with it).
-  cartLines CartLine[]
+  cartLines  CartLine[]
+  /// Order lines for this variant (variants with orders are never removed).
+  orderLines OrderLine[]
 
   /// One variant per size × color within a product (also serves product_id lookups).
   @@unique([productId, sizeId, colorId])
@@ -319,4 +321,73 @@ model CartLine {
   @@unique([cartId, variantId])
   @@index([variantId])
   @@map("cart_lines")
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  EXPIRED
+
+  @@map("order_status")
+}
+
+/// A guest order (store-checkout-api spec). Holds guest contact and delivery details, returned
+/// only with the order's access key. Lines and totals are copies of what was ordered.
+model Order {
+  id                String      @id @default(uuid(7)) @db.Uuid
+  /// ITE- plus 8 Crockford base32 characters (CHECK in migration).
+  number            String      @unique
+  /// Hex HMAC-SHA-256 of the access key (the key itself is never stored).
+  accessKeyHash     String      @unique @map("access_key_hash") @db.Char(64)
+  status            OrderStatus @default(AWAITING_PAYMENT)
+  /// Lowercased.
+  email             String
+  name              String
+  /// +62… (normalized).
+  phone             String
+  addressLine1      String      @map("address_line1")
+  addressLine2      String?     @map("address_line2")
+  city              String
+  /// BPS province code, two digits (CHECK in migration).
+  province          String      @db.Char(2)
+  postalCode        String      @map("postal_code") @db.Char(5)
+  note              String?
+  /// Minor units of `currency`; non-negative (CHECK in migration).
+  subtotalAmount    BigInt      @map("subtotal_amount")
+  shippingFeeAmount Int         @map("shipping_fee_amount")
+  totalAmount       BigInt      @map("total_amount")
+  currency          String      @db.Char(3)
+  paymentDeadline   DateTime    @map("payment_deadline") @db.Timestamptz(3)
+  placedAt          DateTime    @default(now()) @map("placed_at") @db.Timestamptz(3)
+  updatedAt         DateTime    @default(now()) @map("updated_at") @db.Timestamptz(3)
+  expiredAt         DateTime?   @map("expired_at") @db.Timestamptz(3)
+
+  lines OrderLine[]
+
+  /// The expiry sweeper's lookup.
+  @@index([status, paymentDeadline])
+  @@map("orders")
+}
+
+/// One ordered variant, copied as it was when the order was placed.
+model OrderLine {
+  id              String @id @default(uuid(7)) @db.Uuid
+  orderId         String @map("order_id") @db.Uuid
+  variantId       String @map("variant_id") @db.Uuid
+  productName     String @map("product_name")
+  productSlug     String @map("product_slug")
+  colorName       String @map("color_name")
+  sizeCode        String @map("size_code")
+  unitAmount      Int    @map("unit_amount")
+  /// 1..10 (CHECK in migration).
+  quantity        Int
+  lineTotalAmount BigInt @map("line_total_amount")
+  /// Display order (the cart's line order).
+  position        Int
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([variantId])
+  @@map("order_lines")
 }

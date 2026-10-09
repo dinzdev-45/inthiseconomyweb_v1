@@ -88,7 +88,7 @@ test.describe('storefront-cart: Cart page', () => {
     await expect(first.locator('[data-media]')).toHaveCount(1);
     await expect(lines(page).nth(1).locator('[data-line-total]')).toHaveText(/Rp\s829\.000/);
     await expect(subtotal(page)).toContainText(/Rp\s1\.528\.000/);
-    await expect(page.getByText('Checkout is coming soon.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Checkout' })).toHaveAttribute('href', '/checkout');
     // Not indexed.
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
   });
