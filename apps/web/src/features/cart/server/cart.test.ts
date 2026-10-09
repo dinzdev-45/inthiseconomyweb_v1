@@ -11,7 +11,7 @@ vi.mock('next/headers', () => ({
 }));
 
 const { CART_COOKIE, cartCookieOptions, readCartToken, writeCartToken } =
-  await import('./cookie.ts');
+  await import('@/lib/cart-cookie');
 const { getCart } = await import('./cart.ts');
 
 const TOKEN = 'a'.repeat(43);

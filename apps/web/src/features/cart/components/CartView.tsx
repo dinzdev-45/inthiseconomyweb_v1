@@ -61,7 +61,18 @@ export function CartView({ cart, addedLineId, status }: CartViewProps) {
               <span>Subtotal</span>
               <span>{formatMoney(cart!.subtotal)}</span>
             </p>
-            <p className="text-sm text-stone">Checkout is coming soon.</p>
+            {lines.some((line) => line.status !== 'AVAILABLE') ? (
+              <p
+                className="max-w-sm text-right text-sm font-semibold text-danger"
+                data-checkout-blocked
+              >
+                Remove or update the items marked above to check out.
+              </p>
+            ) : (
+              <Link href="/checkout" className={`mt-2 ${cta.primary}`}>
+                Checkout
+              </Link>
+            )}
           </div>
         </>
       )}

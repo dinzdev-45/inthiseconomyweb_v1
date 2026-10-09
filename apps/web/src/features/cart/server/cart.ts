@@ -4,7 +4,7 @@ import { StoreCart } from '@ite/contracts';
 
 import { StoreApiError, storeRequest } from '@/lib/api/store';
 
-import { readCartToken } from './cookie.ts';
+import { readCartToken } from '@/lib/cart-cookie';
 
 /**
  * The customer's cart, or null when there is no cart cookie or the API no longer knows the cart

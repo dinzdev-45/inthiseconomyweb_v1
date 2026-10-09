@@ -12,7 +12,7 @@ import { redirect } from 'next/navigation';
 import { StoreApiError, storeRequest } from '@/lib/api/store';
 
 import { addFailure, changeFailure, safeReturnTo, withParam } from './outcome.ts';
-import { readCartToken, writeCartToken } from './server/cookie.ts';
+import { readCartToken, writeCartToken } from '@/lib/cart-cookie';
 
 /*
  * Cart Server Actions (guest-cart design D5): plain form posts that work without client
