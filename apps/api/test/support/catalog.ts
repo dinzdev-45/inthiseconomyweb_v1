@@ -21,8 +21,8 @@ type Response = { statusCode: number; body: string; json: () => unknown };
  * A signed-in OWNER and ADMIN on their own migrated database, with helpers for the admin
  * catalog API. Products are built through the API; setup images go straight into the database.
  */
-export async function createCatalogHarness() {
-  const h: AuthHarness = await createAuthHarness();
+export async function createCatalogHarness(...args: Parameters<typeof createAuthHarness>) {
+  const h: AuthHarness = await createAuthHarness(...args);
   const owner = await createStaff(h.db, {
     email: 'owner@example.com',
     password: PASSWORD,

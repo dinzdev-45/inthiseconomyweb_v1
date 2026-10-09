@@ -89,3 +89,35 @@ describe('parseEnv', () => {
     },
   );
 });
+
+describe('shipping settings', () => {
+  it('default the flat fee outside production and leave the threshold unset', () => {
+    const env = parseEnv(valid);
+    expect(env.SHIPPING_FLAT_FEE).toBe(2_000_000);
+    expect(env.FREE_SHIPPING_THRESHOLD).toBeUndefined();
+  });
+
+  it('read whole minor units', () => {
+    const env = parseEnv({ ...valid, SHIPPING_FLAT_FEE: '1500000', FREE_SHIPPING_THRESHOLD: '0' });
+    expect(env.SHIPPING_FLAT_FEE).toBe(1_500_000);
+    expect(env.FREE_SHIPPING_THRESHOLD).toBe(0);
+  });
+
+  it('require the flat fee in production', () => {
+    expect(problems({ ...valid, NODE_ENV: 'production' })).toContain(
+      'SHIPPING_FLAT_FEE: is required in production',
+    );
+    expect(
+      parseEnv({ ...valid, NODE_ENV: 'production', SHIPPING_FLAT_FEE: '0' }).SHIPPING_FLAT_FEE,
+    ).toBe(0);
+  });
+
+  it.each(['-1', '1.5', 'free', '2000000001'])('reject %j without echoing it', (value) => {
+    for (const name of ['SHIPPING_FLAT_FEE', 'FREE_SHIPPING_THRESHOLD']) {
+      const found = problems({ ...valid, [name]: value });
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatch(new RegExp(`^${name}: must`));
+      expect(found[0]).not.toContain(value);
+    }
+  });
+});

@@ -1,5 +1,6 @@
 import { isIP } from 'node:net';
 
+import { CATALOG_PRICE_MAX } from '@ite/contracts';
 import { z } from 'zod';
 
 const required = (issue: { input?: unknown }) =>
@@ -66,23 +67,59 @@ export const StoreCurrency = z
     error: 'must be an uppercase ISO 4217 currency code, e.g. IDR',
   });
 
-const EnvSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  HOST: z.string().min(1).default('0.0.0.0'),
-  PORT: z.coerce.number().int().min(0).max(65535).default(4000),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  DATABASE_URL: DatabaseUrl,
-  TRUST_PROXY: TrustProxy,
-  STORE_CURRENCY: StoreCurrency,
-  ADMIN_ORIGIN: z
-    .url({ protocol: /^https?$/, error: (issue) => required(issue) ?? 'must be an http(s) URL' })
-    .refine((value) => !URL.canParse(value) || new URL(value).origin === value, {
-      error: 'must be an origin (scheme://host[:port]) with no path or trailing slash',
-    }),
-  SESSION_SECRET: z
-    .string({ error: required })
-    .min(32, { error: (issue) => required(issue) ?? 'must be at least 32 characters' }),
-});
+/** Shipping amounts: whole minor units of the store currency, 0 to the catalog price maximum. */
+const ShippingAmount = z.preprocess(
+  // Empty means unset; a number (an already-parsed config) is read like its digits.
+  (value) => (value === '' ? undefined : typeof value === 'number' ? String(value) : value),
+  z
+    .string()
+    .regex(/^\d+$/, 'must be a whole number of minor units')
+    .transform(Number)
+    .refine((amount) => amount <= CATALOG_PRICE_MAX, {
+      error: `must be at most ${CATALOG_PRICE_MAX}`,
+    })
+    .optional(),
+);
+/** Rp 20.000 in IDR minor units: the non-production default flat shipping fee. */
+const DEFAULT_SHIPPING_FLAT_FEE = 2_000_000;
+
+const EnvSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    HOST: z.string().min(1).default('0.0.0.0'),
+    PORT: z.coerce.number().int().min(0).max(65535).default(4000),
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
+    DATABASE_URL: DatabaseUrl,
+    TRUST_PROXY: TrustProxy,
+    STORE_CURRENCY: StoreCurrency,
+    ADMIN_ORIGIN: z
+      .url({ protocol: /^https?$/, error: (issue) => required(issue) ?? 'must be an http(s) URL' })
+      .refine((value) => !URL.canParse(value) || new URL(value).origin === value, {
+        error: 'must be an origin (scheme://host[:port]) with no path or trailing slash',
+      }),
+    SESSION_SECRET: z
+      .string({ error: required })
+      .min(32, { error: (issue) => required(issue) ?? 'must be at least 32 characters' }),
+    /** Flat shipping fee per order (guest-checkout design D4). Required in production. */
+    SHIPPING_FLAT_FEE: ShippingAmount,
+    /** Orders whose subtotal reaches this ship free. Optional. */
+    FREE_SHIPPING_THRESHOLD: ShippingAmount,
+  })
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV === 'production' && env.SHIPPING_FLAT_FEE === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SHIPPING_FLAT_FEE'],
+        message: 'is required in production',
+      });
+    }
+  })
+  .transform((env) => ({
+    ...env,
+    SHIPPING_FLAT_FEE: env.SHIPPING_FLAT_FEE ?? DEFAULT_SHIPPING_FLAT_FEE,
+  }));
 
 export type Env = Readonly<z.infer<typeof EnvSchema>>;
 

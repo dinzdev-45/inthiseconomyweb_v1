@@ -77,6 +77,23 @@ export {
   StoreCartLine,
   UpdateCartItemRequest,
 } from './cart.ts';
+export {
+  CheckoutSummary,
+  IndonesianPhone,
+  ORDER_KEY_HEADER,
+  OrderAccessKey,
+  OrderNumber,
+  OrderNumberParams,
+  OrderStatus,
+  PlaceOrderRequest,
+  PlaceOrderResponse,
+  PostalCode,
+  PROVINCES,
+  ProvinceCode,
+  provinceName,
+  StoreOrder,
+  StoreOrderLine,
+} from './checkout.ts';
 export { ErrorCode, FieldError, ProblemDetails } from './errors.ts';
 export { HealthResponse, ReadyResponse } from './health.ts';
 export {

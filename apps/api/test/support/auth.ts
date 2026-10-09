@@ -40,12 +40,16 @@ export type AuthHarness = {
 };
 
 /** An app on its own migrated database with a fake clock. */
-export async function createAuthHarness(env: Record<string, string> = {}): Promise<AuthHarness> {
+export async function createAuthHarness(
+  env: Record<string, string> = {},
+  { logStream }: { logStream?: NodeJS.WritableStream } = {},
+): Promise<AuthHarness> {
   const url = await createTestDatabase();
   const clock = new FakeClock();
   const app = await buildApp({
     env: testEnv({ DATABASE_URL: url, ...env }),
     clock,
+    ...(logStream ? { logStream } : {}),
     routes: { admin: [probeRoutes] },
   });
   await app.ready();

@@ -35,6 +35,10 @@ export const ErrorCode = z.enum([
   'VARIANT_UNAVAILABLE',
   'QUANTITY_LIMIT',
   'CART_FULL',
+  // Guest checkout (store-checkout-api)
+  'CART_EMPTY',
+  'CART_CHANGED',
+  'ORDER_NOT_FOUND',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 

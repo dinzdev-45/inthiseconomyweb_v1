@@ -40,7 +40,7 @@ describe('security headers', () => {
     );
     await app.close();
 
-    app = await build({ NODE_ENV: 'production' });
+    app = await build({ NODE_ENV: 'production', SHIPPING_FLAT_FEE: '2000000' });
     expect(
       (await app.inject({ method: 'GET', url: '/health' })).headers['strict-transport-security'],
     ).toBe('max-age=63072000; includeSubDomains');
