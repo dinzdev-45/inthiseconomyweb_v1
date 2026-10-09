@@ -1,4 +1,5 @@
 import {
+  AdminDrop,
   Category,
   Color,
   LoginResponse,
@@ -172,6 +173,20 @@ export function catalogApi(page: Page) {
       send('POST', `/products/${productId}/variants/${variantId}/${action}`, undefined, (v) =>
         ProductVariant.parse(v),
       ),
+    createDrop: (fields: Record<string, unknown> = {}) =>
+      send(
+        'POST',
+        '/drops',
+        {
+          collection: 'COLLECTION E2E',
+          title: unique('Drop'),
+          releaseAt: '2099-06-01T03:00:00.000Z',
+          ...fields,
+        },
+        (v) => AdminDrop.parse(v),
+      ),
+    setDropProducts: (dropId: string, productIds: string[]) =>
+      send('PUT', `/drops/${dropId}/products`, { productIds }, (v) => AdminDrop.parse(v)),
     archiveCategory: (categoryId: string) =>
       send('POST', `/categories/${categoryId}/archive`, undefined, (v) => Category.parse(v)),
   };

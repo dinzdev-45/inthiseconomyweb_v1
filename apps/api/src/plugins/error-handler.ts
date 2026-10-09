@@ -73,6 +73,7 @@ const errorHandlerPlugin: FastifyPluginCallback = (app, _opts, done) => {
       return sendProblem(request, reply, error.status, {
         code: error.code,
         detail: error.detail,
+        ...(error.errors ? { errors: error.errors } : {}),
       });
     }
 

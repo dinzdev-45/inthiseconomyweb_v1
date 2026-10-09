@@ -24,3 +24,13 @@ export async function apiSend<S extends z.ZodType | undefined = undefined>(
   if (response.status === 204 || !schema) return undefined as never;
   return schema.parse(await response.json()) as never;
 }
+
+/** A read from the browser through the same proxy (e.g. a search), parsed with `schema`. */
+export async function apiGet<S extends z.ZodType>(
+  path: `/api/v1/admin/${string}`,
+  schema: S,
+): Promise<z.infer<S>> {
+  const response = await fetch(path, { credentials: 'same-origin' });
+  if (!response.ok) throw await toApiError(response);
+  return schema.parse(await response.json());
+}

@@ -39,6 +39,10 @@ export const ErrorCode = z.enum([
   'CART_EMPTY',
   'CART_CHANGED',
   'ORDER_NOT_FOUND',
+  // Drops (drops-management, store-cart-api)
+  'PRODUCT_IN_OTHER_DROP',
+  'DROP_NOT_READY',
+  'NOT_RELEASED',
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
 

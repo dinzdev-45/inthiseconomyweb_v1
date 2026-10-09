@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { ProductGrid, ProductRail, type ProductSummary } from '@/features/catalog';
-import { DropFeature } from '@/features/drops';
+import { DropFeature, type DropSummary } from '@/features/drops';
 import { HOME_CONTENT } from '@/features/home/content';
 
 /**
@@ -20,9 +20,18 @@ const withImages: ProductSummary = {
   hoverImage: { src: '/e2e-fixtures/product-back.png', alt: 'Back view', width: 800, height: 1000 },
 };
 
+const drop: DropSummary = {
+  slug: 'collection-001-cost-of-living',
+  collection: 'COLLECTION 001',
+  title: 'COST OF LIVING',
+  status: 'live',
+  startsAt: '2026-10-01T03:00:00.000Z',
+  image: null,
+};
+
 export default function CatalogFixturesPage() {
   if (process.env.STOREFRONT_E2E_FIXTURES !== '1') notFound();
-  const { featured, newArrivals, drop } = HOME_CONTENT;
+  const { featured, newArrivals } = HOME_CONTENT;
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-24 px-4 py-16 md:px-8">
@@ -38,7 +47,7 @@ export default function CatalogFixturesPage() {
       </div>
       <div data-fixture="drop-upcoming">
         <DropFeature
-          drop={drop && { ...drop, status: 'upcoming', startsAt: '2026-11-20T03:00:00.000Z' }}
+          drop={{ ...drop, status: 'upcoming', startsAt: '2026-11-20T03:00:00.000Z' }}
           headingId="fixture-drop-upcoming"
         />
       </div>

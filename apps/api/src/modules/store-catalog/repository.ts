@@ -1,6 +1,8 @@
 import type { StoreSort } from '@ite/contracts';
 import { Prisma, type PrismaClient } from '@ite/db';
 
+import { unreleased, unreleasedInDraft } from '../drops/release.ts';
+
 /*
  * Read-only catalog queries for the public store zone (storefront-catalog design D3). Only
  * ACTIVE products and their ACTIVE variants are ever read. A list request is two statements:
@@ -14,9 +16,14 @@ export type StoreListFilter = {
   color?: string;
   inStock?: boolean;
   q?: string;
-  /** Exact product slug (the single-product lookup). */
+  /** Exact product slug (the single-product lookup): unreleased products of published drops are included. */
   slug?: string;
+  /** Only this drop's products, released or not (the drop page). */
+  dropId?: string;
 };
+
+/** Catalog orders, plus the drop page's own order (the drop's product order). */
+export type StoreListSort = StoreSort | 'drop';
 
 /** One product row of a page: everything but its colors and images. */
 export type StoreProductRow = {
@@ -29,6 +36,8 @@ export type StoreProductRow = {
   minPrice: number;
   maxPrice: number;
   inStock: boolean;
+  /** Set while the product is unreleased (its drop releases later). */
+  releaseAt: Date | null;
 };
 
 type StoreImageRow = { url: string; alt: string };
@@ -51,6 +60,7 @@ export type StoreVariantRow = {
 
 export type StoreProductDetailRow = StoreProductExtras & {
   description: string | null;
+  drop: { slug: string; title: string } | null;
   images: { url: string; alt: string; color: string | null }[];
   variants: StoreVariantRow[];
 };
@@ -102,10 +112,22 @@ const EXTRAS_COLUMNS = Prisma.sql`
   ) AS "secondaryImage"
 `;
 
-const ORDER_BY: Record<StoreSort, Prisma.Sql> = {
+/** Which products the release rule lets a query see (drops design D2). */
+function releaseFilter(filter: StoreListFilter, now: Date): Prisma.Sql {
+  if (filter.dropId) {
+    return Prisma.sql`AND EXISTS (
+      SELECT 1 FROM drop_products fdp WHERE fdp.product_id = p.id AND fdp.drop_id = ${filter.dropId}::uuid
+    )`;
+  }
+  if (filter.slug) return Prisma.sql`AND NOT ${unreleasedInDraft('p', now)}`;
+  return Prisma.sql`AND NOT ${unreleased('p', now)}`;
+}
+
+const ORDER_BY: Record<StoreListSort, Prisma.Sql> = {
   newest: Prisma.sql`activated_at DESC NULLS LAST, slug ASC`,
   'price-asc': Prisma.sql`min_price ASC, activated_at DESC NULLS LAST, slug ASC`,
   'price-desc': Prisma.sql`min_price DESC, activated_at DESC NULLS LAST, slug ASC`,
+  drop: Prisma.sql`drop_position ASC NULLS LAST, slug ASC`,
 };
 
 export function createStoreCatalogRepository(db: PrismaClient) {
@@ -116,9 +138,10 @@ export function createStoreCatalogRepository(db: PrismaClient) {
      */
     async page(
       filter: StoreListFilter,
-      sort: StoreSort,
+      sort: StoreListSort,
       limit: number,
       offset: number,
+      now: Date,
     ): Promise<{ rows: StoreProductRow[]; total: number }> {
       const result = await db.$queryRaw<
         ({ total: number } & ({ [K in keyof StoreProductRow]: null } | StoreProductRow))[]
@@ -136,7 +159,12 @@ export function createStoreCatalogRepository(db: PrismaClient) {
         matched AS (
           SELECT p.id, p.slug, p.name, p.currency, p.activated_at,
                  c.slug AS category_slug, c.name AS category_name,
-                 priced.min_price, priced.max_price, priced.in_stock
+                 priced.min_price, priced.max_price, priced.in_stock,
+                 (
+                   SELECT rd.release_at FROM drop_products rdp JOIN drops rd ON rd.id = rdp.drop_id
+                   WHERE rdp.product_id = p.id AND rd.release_at > ${now}
+                 ) AS release_at,
+                 (SELECT pdp.position FROM drop_products pdp WHERE pdp.product_id = p.id) AS drop_position
           FROM products p
           JOIN priced ON priced.product_id = p.id
           JOIN categories c ON c.id = p.category_id
@@ -148,12 +176,13 @@ export function createStoreCatalogRepository(db: PrismaClient) {
               : Prisma.empty
           }
           ${filter.slug ? Prisma.sql`AND p.slug = ${filter.slug}` : Prisma.empty}
+          ${releaseFilter(filter, now)}
           ${variantFilter(filter)}
         )
         SELECT counted.total, page.id, page.slug, page.name, page.currency,
                page.category_slug AS "categorySlug", page.category_name AS "categoryName",
                page.min_price AS "minPrice", page.max_price AS "maxPrice",
-               page.in_stock AS "inStock"
+               page.in_stock AS "inStock", page.release_at AS "releaseAt"
         FROM (SELECT COUNT(*)::integer AS total FROM matched) counted
         LEFT JOIN LATERAL (
           SELECT matched.*, row_number() OVER (ORDER BY ${ORDER_BY[sort]}) AS position
@@ -193,6 +222,11 @@ export function createStoreCatalogRepository(db: PrismaClient) {
     async detail(productId: string): Promise<StoreProductDetailRow | null> {
       const rows = await db.$queryRaw<StoreProductDetailRow[]>`
         SELECT p.description, ${EXTRAS_COLUMNS},
+          (
+            SELECT json_build_object('slug', d.slug, 'title', d.title)
+            FROM drop_products ddp JOIN drops d ON d.id = ddp.drop_id
+            WHERE ddp.product_id = p.id AND d.status = 'PUBLISHED'
+          ) AS drop,
           COALESCE((
             SELECT json_agg(json_build_object('url', i.url, 'alt', i.alt, 'color', ic.slug)
                             ORDER BY i.sort_order, i.id)
@@ -227,12 +261,12 @@ export function createStoreCatalogRepository(db: PrismaClient) {
      * Filter options over ACTIVE products and their ACTIVE variants: categories (with product
      * counts) and colors by name, sizes in display order.
      */
-    async filterOptions() {
+    async filterOptions(now: Date) {
       const [categories, sizes, colors] = await Promise.all([
         db.$queryRaw<{ slug: string; name: string; productCount: number }[]>`
           SELECT c.slug, c.name, COUNT(*)::integer AS "productCount"
           FROM products p JOIN categories c ON c.id = p.category_id
-          WHERE p.status = 'ACTIVE' AND EXISTS (
+          WHERE p.status = 'ACTIVE' AND NOT ${unreleased('p', now)} AND EXISTS (
             SELECT 1 FROM product_variants pv WHERE pv.product_id = p.id AND pv.status = 'ACTIVE'
           )
           GROUP BY c.id, c.slug, c.name
@@ -244,6 +278,7 @@ export function createStoreCatalogRepository(db: PrismaClient) {
           WHERE EXISTS (
             SELECT 1 FROM product_variants pv JOIN products p ON p.id = pv.product_id
             WHERE pv.size_id = s.id AND pv.status = 'ACTIVE' AND p.status = 'ACTIVE'
+              AND NOT ${unreleased('p', now)}
           )
           ORDER BY s.sort_order, s.code
         `,
@@ -253,6 +288,7 @@ export function createStoreCatalogRepository(db: PrismaClient) {
           WHERE EXISTS (
             SELECT 1 FROM product_variants pv JOIN products p ON p.id = pv.product_id
             WHERE pv.color_id = co.id AND pv.status = 'ACTIVE' AND p.status = 'ACTIVE'
+              AND NOT ${unreleased('p', now)}
           )
           ORDER BY co.name, co.slug
         `,

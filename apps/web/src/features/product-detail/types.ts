@@ -28,4 +28,8 @@ export type ProductDetail = {
   images: GalleryImage[];
   /** By size display order, then color name (as the API orders them). */
   variants: DetailVariant[];
+  /** When the product's drop releases (ISO 8601), or null once released or in no drop. */
+  releaseAt: string | null;
+  /** The published drop the product belongs to, if any. */
+  drop: { slug: string; title: string } | null;
 };

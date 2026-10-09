@@ -119,6 +119,25 @@ describe('toCatalogProblem', () => {
     });
   });
 
+  it("keeps a refusal's itemised messages (what a drop still needs to publish)", () => {
+    const problem = toCatalogProblem(
+      apiError(409, {
+        code: 'DROP_NOT_READY',
+        detail: 'The drop cannot be published yet: it needs an image, at least one product.',
+        errors: [
+          { path: 'image', message: 'an image' },
+          { path: 'products', message: 'at least one product' },
+        ],
+      }),
+    );
+    expect(problem).toMatchObject({
+      kind: 'rejected',
+      code: 'DROP_NOT_READY',
+      fieldErrors: {},
+      items: ['an image', 'at least one product'],
+    });
+  });
+
   it('maps 5xx to a generic message with the request id as reference', () => {
     const problem = toCatalogProblem(
       apiError(500, { code: 'INTERNAL_ERROR', detail: 'An unexpected error occurred.' }),

@@ -1,3 +1,4 @@
+export { CatalogGrid } from './components/CatalogGrid.tsx';
 export { CatalogSkeleton } from './components/CatalogSkeleton.tsx';
 export { CatalogUnavailable } from './components/CatalogUnavailable.tsx';
 export { ProductCard } from './components/ProductCard.tsx';

@@ -3,7 +3,7 @@ import type { HomeContent } from './types.ts';
 
 /**
  * Placeholder homepage content (storefront-homepage design D2). Products,
- * the drop, the look, and the lookbook stand in for catalog/drop/lookbook data
+ * the look, and the lookbook stand in for catalog/lookbook data
  * that does not exist yet; prices use IDR as a stand-in currency, in ISO 4217
  * minor units (2 digits for IDR), so 89900000 is Rp 899.000.
  * Read it only through getHomeContent().
@@ -32,14 +32,8 @@ export const HOME_CONTENT: HomeContent = {
     cta: { label: 'SHOP THE DROP', href: '/drops' },
     visual: { image: null, placeholderLabel: 'CAMPAIGN — COST OF LIVING' },
   },
-  drop: {
-    slug: 'collection-001-cost-of-living',
-    collection: 'COLLECTION 001',
-    title: 'COST OF LIVING',
-    status: 'live',
-    startsAt: '2026-10-01T03:00:00.000Z',
-    image: null,
-  },
+  // The featured drop comes from the store drops API (see getHomeContent).
+  drop: null,
   featured: {
     heading: 'Featured',
     products: [overdraftHoodie, inflationTee, minimumWageCargo, rentDueJacket],

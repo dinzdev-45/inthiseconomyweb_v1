@@ -25,6 +25,8 @@ They SHALL require no credentials and ignore any that are sent (cookies, authori
 ### Requirement: Active products only
 Store catalog endpoints SHALL include only products whose status is `ACTIVE`. Draft, inactive, and archived products SHALL NOT appear in lists, filter options, or by slug. Only `ACTIVE` variants SHALL count toward prices, availability, sizes, and colors. A product that is not `ACTIVE` SHALL be indistinguishable from one that does not exist.
 
+Unreleased products (in a drop whose release time is still ahead; see `drops-management`) SHALL NOT appear in lists, search, filter options, or category counts. By slug, an unreleased product of a `PUBLISHED` drop SHALL be returned with its release time, and one of a `DRAFT` drop SHALL be not found.
+
 #### Scenario: Only active products are listed
 - **WHEN** draft, active, inactive, and archived products exist and a customer lists the catalog
 - **THEN** only the active products are returned, and the totals count only them
@@ -36,6 +38,10 @@ Store catalog endpoints SHALL include only products whose status is `ACTIVE`. Dr
 #### Scenario: Active product by slug
 - **WHEN** a customer requests an active product by its slug
 - **THEN** the API responds `200` with that product's detail
+
+#### Scenario: Unreleased products stay out of the shop
+- **WHEN** an active product belongs to a published drop releasing tomorrow, and another to a draft drop releasing tomorrow
+- **THEN** neither appears in the catalog list, search, or filter options; by slug the first is returned with tomorrow's release time and the second responds `404 NOT_FOUND`, and after the release time both are listed
 
 ### Requirement: Customer-safe product summary
 In product lists, a catalog product SHALL be described only by:
@@ -72,6 +78,8 @@ It SHALL NOT include:
   - `color`: `slug`, `name`, and `hex`
   - `price`: its effective price as `Money`, in the store currency
   - `availability`: `IN_STOCK` when its stock is above zero, otherwise `SOLD_OUT`
+- `releaseAt`: the release time while the product is unreleased, otherwise null
+- `drop`: the `slug` and `title` of the published drop the product belongs to, or null
 
 An image linked to a variant SHALL be tagged with that variant's color. Images whose color no `ACTIVE` variant uses SHALL be left out. Like the summary, the detail SHALL NOT include stock quantities, SKUs, internal ids, staff attribution, timestamps, inactive variants, or any other admin-only field.
 
@@ -86,6 +94,10 @@ An image linked to a variant SHALL be tagged with that variant's color. Images w
 #### Scenario: Gallery images tagged by color
 - **WHEN** an active product has an image linked to its black variant, an image linked to no variant, and an image linked only to an inactive variant whose color no active variant uses
 - **THEN** the detail's images are the first tagged `black` and the second tagged null, in display order, and the third is not included
+
+#### Scenario: Release time in the detail
+- **WHEN** a customer requests a product of a published drop releasing tomorrow, and a product in no drop
+- **THEN** the first detail has `releaseAt` set to tomorrow's release time and its drop's slug and title, and the second has `releaseAt: null` and `drop: null`
 
 ### Requirement: Availability
 A product's `availability` SHALL be `IN_STOCK` when at least one of its `ACTIVE` variants has a stock quantity above zero, and `SOLD_OUT` otherwise. Quantities SHALL never be exposed.

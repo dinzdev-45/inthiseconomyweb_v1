@@ -8,6 +8,7 @@ describe('visibleNav', () => {
     expect(visibleNav(ROLE_PERMISSIONS.OWNER).map((i) => i.label)).toEqual([
       'Dashboard',
       'Products',
+      'Drops',
       'Categories',
       'Sizes',
       'Colors',
@@ -16,6 +17,7 @@ describe('visibleNav', () => {
     expect(visibleNav(ROLE_PERMISSIONS.ADMIN).map((i) => i.label)).toEqual([
       'Dashboard',
       'Products',
+      'Drops',
       'Categories',
       'Sizes',
       'Colors',
@@ -31,6 +33,7 @@ describe('admin-catalog-ui: Catalog navigation and page access', () => {
       );
       expect(catalog.map((item) => [item.label, item.href])).toEqual([
         ['Products', '/catalog/products'],
+        ['Drops', '/catalog/drops'],
         ['Categories', '/catalog/categories'],
         ['Sizes', '/catalog/sizes'],
         ['Colors', '/catalog/colors'],

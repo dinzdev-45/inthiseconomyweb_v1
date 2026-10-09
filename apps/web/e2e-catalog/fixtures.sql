@@ -106,3 +106,40 @@ SELECT pg_temp.fixture('archived-jacket', 'Archived Jacket', 'outerwear', 999000
   '[{"size": "M", "color": "black", "stock": 8}]',
   '[{"url": "/images/products/archived-jacket/front.jpg", "alt": "Archived Jacket, front view"}]',
   'ARCHIVED');
+
+-- Drops (drops change). The two Overtime products exist only in a drop releasing in 2099, so they
+-- are unreleased: never in the shop, search, or filter options, and the catalog stays at 30.
+SELECT pg_temp.fixture('overtime-jacket', 'Overtime Jacket', 'outerwear', 1199000,
+  '[{"size": "M", "color": "black", "stock": 10}]',
+  '[{"url": "/images/products/overtime-jacket/front.jpg", "alt": "Overtime Jacket, front view"}]');
+SELECT pg_temp.fixture('night-shift-tee', 'Night Shift Tee', 'apparel', 399000,
+  '[{"size": "M", "color": "black", "stock": 10}, {"size": "L", "color": "black", "stock": 10}]',
+  '[{"url": "/images/products/night-shift-tee/front.jpg", "alt": "Night Shift Tee, front view"}]');
+
+INSERT INTO drops (id, slug, collection, title, description, release_at, image_url, image_alt, status)
+VALUES
+  (gen_random_uuid(), 'collection-001-cost-of-living', 'COLLECTION 001', 'Cost of Living',
+   'Clothing for the world we''re living in.', '2026-10-01 03:00:00Z',
+   '/images/drops/collection-001.jpg', 'Collection 001 campaign', 'PUBLISHED'),
+  (gen_random_uuid(), 'overtime', 'COLLECTION 002', 'Overtime',
+   'Built for the late shift.', '2099-01-01 03:00:00Z',
+   '/images/drops/overtime.jpg', 'Overtime campaign', 'PUBLISHED'),
+  (gen_random_uuid(), 'archive-zero', 'ARCHIVE 000', 'Archive Zero',
+   'The preview run.', '2026-09-01 03:00:00Z',
+   '/images/drops/archive-zero.jpg', 'Archive Zero campaign', 'PUBLISHED'),
+  (gen_random_uuid(), 'first-sample', 'SAMPLE 000', 'First Sample',
+   NULL, '2026-08-01 03:00:00Z', NULL, NULL, 'PUBLISHED');
+
+INSERT INTO drop_products (drop_id, product_id, position)
+SELECT d.id, p.id, x.position
+FROM (VALUES
+  ('collection-001-cost-of-living', 'overdraft-hoodie', 0),
+  ('collection-001-cost-of-living', 'inflation-tee', 1),
+  ('collection-001-cost-of-living', 'minimum-wage-cargo', 2),
+  ('collection-001-cost-of-living', 'rent-due-coach-jacket', 3),
+  ('overtime', 'overtime-jacket', 0),
+  ('overtime', 'night-shift-tee', 1),
+  ('archive-zero', 'filler-tee-01', 0)
+) AS x(drop_slug, product_slug, position)
+JOIN drops d ON d.slug = x.drop_slug
+JOIN products p ON p.slug = x.product_slug;

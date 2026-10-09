@@ -21,8 +21,9 @@ The storefront SHALL keep the cart token in a cookie that is HTTP-only, `SameSit
 The product page SHALL offer an "Add to cart" button for the selected variant that adds one of it and works without client JavaScript.
 - **Before a size is selected:** the button SHALL be unavailable, with the text "Select a size".
 - **Sold-out variant:** the button SHALL be unavailable, with the text "Sold out".
+- **Unreleased product:** the button SHALL be unavailable, with the text "Releases <date and time in WIB>", whatever the selection.
 - **After adding:** the customer SHALL be taken to `/cart`, which confirms what was added.
-- **Failed add:** the customer SHALL return to the same product page and selection, with a message saying why. The reasons are that the variant is no longer available, not enough stock, the quantity limit, the cart is full, or the cart is temporarily unavailable.
+- **Failed add:** the customer SHALL return to the same product page and selection, with a message saying why. The reasons are that the variant is no longer available, not released yet, not enough stock, the quantity limit, the cart is full, or the cart is temporarily unavailable.
 
 #### Scenario: Add the selected variant
 - **WHEN** a customer selects a color and an in-stock size and presses "Add to cart"
@@ -39,6 +40,10 @@ The product page SHALL offer an "Add to cart" button for the selected variant th
 #### Scenario: Add fails
 - **WHEN** a customer adds a variant whose quantity in the cart is already 10
 - **THEN** the product page is shown again with the same selection and a message that the quantity limit is reached
+
+#### Scenario: Unreleased product cannot be added from its page
+- **WHEN** a customer opens the page of a product whose drop releases tomorrow and selects a size
+- **THEN** the "Add to cart" control is unavailable and says when the product releases
 
 ### Requirement: Cart page
 The storefront SHALL provide `/cart`, rendered on the server and not indexed. It SHALL list the cart's lines with the product image (or placeholder), the name linking to the product page with that color and size, color, size, unit price, quantity, and line total, followed by the subtotal and a "Checkout" link to `/checkout`. Each line SHALL let the customer change its quantity (1 to 10) and remove it, without client JavaScript.

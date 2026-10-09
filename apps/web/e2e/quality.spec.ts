@@ -143,7 +143,7 @@ test('Placeholder media', async ({ page }) => {
   for (const src of imgs) expect(src).toBeTruthy();
 
   const placeholders = page.locator('[data-media="placeholder"]');
-  expect(await placeholders.count()).toBeGreaterThan(15);
+  expect(await placeholders.count()).toBeGreaterThanOrEqual(15); // no drop section without an API
   const frames = await placeholders.evaluateAll((els) =>
     els.map((el) => ({
       hidden: el.getAttribute('aria-hidden'),
@@ -197,7 +197,7 @@ test('Reserved media space', async ({ page }) => {
       const w = window as unknown as { __cls: number; __frames: number[] };
       return { cls: w.__cls, frames: w.__frames };
     });
-    expect(frames.length, 'media frames at DOMContentLoaded').toBeGreaterThan(15);
+    expect(frames.length, 'media frames at DOMContentLoaded').toBeGreaterThanOrEqual(15);
     for (const height of frames) expect(height).toBeGreaterThan(0);
     expect(cls, `cumulative layout shift at ${viewport.width}px`).toBeLessThan(0.1);
   }
@@ -212,7 +212,9 @@ test('Homepage does not depend on the API', async ({ page }) => {
   });
   const response = await page.goto('/');
   expect(response!.status()).toBe(200);
-  await expect(page.locator(SECTIONS)).toHaveCount(9);
+  // Every section except the drop section, which needs the API.
+  await expect(page.locator(SECTIONS)).toHaveCount(8);
+  await expect(page.locator('section[data-drop-status]')).toHaveCount(0);
   await expect(page.getByText('Something went wrong')).toHaveCount(0);
   await page.waitForTimeout(500);
   expect(apiRequests).toEqual([]);
@@ -227,5 +229,5 @@ test('Static homepage', () => {
     ),
   ) as { routes: Record<string, { initialRevalidateSeconds: number | false }> };
   expect(manifest.routes).toHaveProperty('/');
-  expect(manifest.routes['/']!.initialRevalidateSeconds).toBe(false); // fully static, no revalidation
+  expect(manifest.routes['/']!.initialRevalidateSeconds).toBe(300); // static, revalidated every 5 minutes
 });

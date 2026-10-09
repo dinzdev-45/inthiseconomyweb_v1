@@ -29,6 +29,8 @@ export type CatalogProblem = {
   /** Messages keyed by form field name (API paths such as `basePrice.amount`). */
   fieldErrors: Record<string, string>;
   code?: ErrorCode;
+  /** For a refusal, the API's itemised messages (e.g. what a drop still needs to publish). */
+  items?: string[];
   /** Request id to quote for unexpected failures. */
   reference?: string;
 };
@@ -85,6 +87,7 @@ export function toCatalogProblem(error: unknown): CatalogProblem {
       message: detail,
       fieldErrors: field ? { [field]: detail } : {},
       code,
+      ...(error.errors.length > 0 ? { items: error.errors.map((item) => item.message) } : {}),
     };
   }
   return {

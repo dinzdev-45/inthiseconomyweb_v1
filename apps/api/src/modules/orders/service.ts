@@ -99,7 +99,7 @@ export function createOrderService({
     const row = await orders.transaction(async (tx) => {
       const cart = await carts.lockLive(tx, hash, now);
       if (!cart) throw errors.cartNotFound();
-      const rows = await carts.view(cart.id, tx);
+      const rows = await carts.view(cart.id, now, tx);
       if (rows.length === 0) throw errors.cartEmpty();
       if (rows.some((line) => line.status !== 'AVAILABLE')) throw errors.cartChanged();
 
@@ -113,8 +113,9 @@ export function createOrderService({
 
       // Take stock in variant id order (the lock order admin variant writes use).
       for (const line of [...rows].sort((a, b) => a.variantId.localeCompare(b.variantId))) {
-        if (!(await orders.takeStock(tx, line.variantId, line.quantity)))
+        if (!(await orders.takeStock(tx, line.variantId, line.quantity, now))) {
           throw errors.cartChanged();
+        }
       }
 
       const created = await orders.create(tx, {
@@ -162,7 +163,7 @@ export function createOrderService({
     async summary(token: string | undefined): Promise<CheckoutSummary> {
       const cart = await carts.findLive(cartHash(token), clock.now());
       if (!cart) throw errors.cartNotFound();
-      const rows = await carts.view(cart.id);
+      const rows = await carts.view(cart.id, clock.now());
       const { lines, subtotal } = toStoreCart(rows, storeCurrency);
       const fee = shippingFee(subtotal.amount);
       return {

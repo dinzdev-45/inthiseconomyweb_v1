@@ -1,10 +1,12 @@
 import type { CartLineStatus } from '@ite/contracts';
 import type { PrismaClient } from '@ite/db';
 
+import { unreleased } from '../drops/release.ts';
+
 export type Tx = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
 
-/** A sellable variant (ACTIVE product, ACTIVE variant) and its stock. */
-export type SellableVariant = { variantId: string; stock: number };
+/** A sellable variant (ACTIVE product, ACTIVE variant), its stock, and whether it is unreleased. */
+export type SellableVariant = { variantId: string; stock: number; unreleased: boolean };
 
 /** A cart line with what quantity changes depend on. */
 export type LockedLine = { id: string; quantity: number; sellable: boolean; stock: number };
@@ -66,9 +68,10 @@ export function createStoreCartRepository(db: PrismaClient) {
     async findSellableVariant(
       tx: Tx,
       key: { productSlug: string; colorSlug: string; sizeCode: string },
+      now: Date,
     ): Promise<SellableVariant | null> {
       const rows = await tx.$queryRaw<SellableVariant[]>`
-        SELECT v.id AS "variantId", v.stock_quantity AS stock
+        SELECT v.id AS "variantId", v.stock_quantity AS stock, ${unreleased('p', now)} AS unreleased
         FROM product_variants v
         JOIN products p ON p.id = v.product_id
         JOIN colors c ON c.id = v.color_id
@@ -87,10 +90,10 @@ export function createStoreCartRepository(db: PrismaClient) {
     },
 
     /** A line of this cart with its variant's sellability and stock, or null. */
-    async findLine(tx: Tx, cartId: string, lineId: string): Promise<LockedLine | null> {
+    async findLine(tx: Tx, cartId: string, lineId: string, now: Date): Promise<LockedLine | null> {
       const rows = await tx.$queryRaw<LockedLine[]>`
         SELECT l.id, l.quantity,
-               (p.status = 'ACTIVE' AND v.status = 'ACTIVE') AS sellable,
+               (p.status = 'ACTIVE' AND v.status = 'ACTIVE' AND NOT ${unreleased('p', now)}) AS sellable,
                v.stock_quantity AS stock
         FROM cart_lines l
         JOIN product_variants v ON v.id = l.variant_id
@@ -124,7 +127,7 @@ export function createStoreCartRepository(db: PrismaClient) {
      * The cart's lines in the order they were added, priced and flagged now (one statement).
      * Pass a transaction to read inside it (checkout does).
      */
-    view(cartId: string, client: Pick<Tx, '$queryRaw'> = db): Promise<CartViewRow[]> {
+    view(cartId: string, now: Date, client: Pick<Tx, '$queryRaw'> = db): Promise<CartViewRow[]> {
       return client.$queryRaw<CartViewRow[]>`
         SELECT l.id, l.variant_id AS "variantId", l.quantity,
                p.slug AS "productSlug", p.name AS "productName", p.currency,
@@ -132,7 +135,8 @@ export function createStoreCartRepository(db: PrismaClient) {
                s.code AS "sizeCode", s.label AS "sizeLabel",
                COALESCE(v.price_override_amount, p.base_price_amount) AS "unitAmount",
                CASE
-                 WHEN p.status <> 'ACTIVE' OR v.status <> 'ACTIVE' THEN 'UNAVAILABLE'
+                 WHEN p.status <> 'ACTIVE' OR v.status <> 'ACTIVE' OR ${unreleased('p', now)}
+                   THEN 'UNAVAILABLE'
                  WHEN v.stock_quantity < l.quantity THEN 'INSUFFICIENT_STOCK'
                  ELSE 'AVAILABLE'
                END AS status,

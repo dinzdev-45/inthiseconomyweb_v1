@@ -42,6 +42,8 @@ const PRODUCT: ProductDetail = {
     variant('M', 'white'),
     variant('L', 'black', 82_900_000, 'SOLD_OUT'),
   ],
+  releaseAt: null,
+  drop: null,
 };
 const states = (options: { state: string }[]) => options.map((o) => o.state);
 

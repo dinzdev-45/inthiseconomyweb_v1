@@ -31,9 +31,9 @@ The hero SHALL fill at least the visible viewport height below the header on eve
 ### Requirement: Drop feature
 The drop feature SHALL present one drop in one of two states:
 - **Live:** shows a "Now live" label, the collection name and title, and an "EXPLORE THE COLLECTION" link to the drop's page (`/drops/<slug>`).
-- **Upcoming:** shows an "Upcoming" label, the collection name and title, the release date, and a reserved, labelled area where a countdown will later appear, with no live timer in this change.
+- **Upcoming:** shows an "Upcoming" label, the collection name and title, the release date, and the release countdown (see `storefront-drops`) in the reserved, labelled countdown area.
 
-When there is no drop to feature, the section SHALL be omitted entirely.
+The featured drop SHALL be the next upcoming published drop, or else the current live drop. When there is no drop to feature, or the drop data could not be loaded, the section SHALL be omitted entirely.
 
 #### Scenario: Live drop
 - **WHEN** the featured drop's status is live
@@ -41,10 +41,10 @@ When there is no drop to feature, the section SHALL be omitted entirely.
 
 #### Scenario: Upcoming drop
 - **WHEN** the featured drop's status is upcoming with a release date
-- **THEN** the section shows "Upcoming", the release date in a human-readable form inside a `time` element with a machine-readable `datetime`, and the reserved countdown area, and no explore link
+- **THEN** the section shows "Upcoming", the release date in a human-readable form inside a `time` element with a machine-readable `datetime`, and the countdown in the reserved countdown area, and no explore link
 
 #### Scenario: No drop to feature
-- **WHEN** there is no drop in the homepage content
+- **WHEN** no drop is published, or the drop data could not be loaded
 - **THEN** the drop section is not rendered and the remaining sections keep their order
 
 ### Requirement: Product cards
@@ -111,11 +111,11 @@ The newsletter section and the footer SHALL each offer an email field with a vis
 - **THEN** a message says sign-up is not open yet and the email was not saved, no network request is made, and nothing is written to cookies or browser storage
 
 ### Requirement: Placeholder content and data seam
-All homepage content SHALL come from one typed placeholder content module, read through a single asynchronous homepage-content function. That function is the only thing a later change replaces to supply real products, drops, and lookbook data. Rendering the homepage SHALL NOT call the API. Media without a real image SHALL render as a decorative placeholder at the same aspect ratio, never as a broken image.
+All homepage content SHALL come from one typed content module, read through a single asynchronous homepage-content function. That function is the only thing a later change replaces to supply real products and lookbook data. The featured drop SHALL come from the store drops API when the homepage is rendered or revalidated (see "Performance"), never per visit. Serving the homepage to a visitor SHALL NOT call the API, and the homepage SHALL still render, without the drop section, when the API is unavailable. Media without a real image SHALL render as a decorative placeholder at the same aspect ratio, never as a broken image.
 
 #### Scenario: Homepage does not depend on the API
-- **WHEN** the homepage is requested while the API is not running
-- **THEN** it renders with status 200 and all sections, and the storefront makes no request to the API
+- **WHEN** the homepage is built and requested while the API is not running
+- **THEN** it renders with status 200 and every section except the drop section, and the browser makes no request to the API
 
 #### Scenario: Placeholder media
 - **WHEN** a product, look, or campaign item has no image
@@ -168,11 +168,11 @@ Motion SHALL be limited to short, subtle transitions such as image crossfades, l
 - **THEN** no element has a running CSS animation or a non-zero transition duration, and opening the mobile menu happens without animation
 
 ### Requirement: Performance
-The homepage SHALL be statically rendered at build time. Media SHALL reserve its aspect ratio before loading so layout does not shift. Real images SHALL be served through Next.js image optimization, with only the hero image loaded eagerly and the rest lazily. Fonts SHALL be loaded through `next/font` (in this change, Archivo via `next/font/google`) with `display: swap`, so a fallback is shown while they load.
+The homepage SHALL be statically prerendered and revalidated at most every 5 minutes, so drop changes appear without a deploy and no visit waits on the API. Media SHALL reserve its aspect ratio before loading so layout does not shift. Real images SHALL be served through Next.js image optimization, with only the hero image loaded eagerly and the rest lazily. Fonts SHALL be loaded through `next/font` (in this change, Archivo via `next/font/google`) with `display: swap`, so a fallback is shown while they load.
 
 #### Scenario: Static homepage
 - **WHEN** the storefront is built for production
-- **THEN** the build output marks `/` as statically prerendered
+- **THEN** the build output marks `/` as statically prerendered, revalidated at most every 300 seconds
 
 #### Scenario: Reserved media space
 - **WHEN** the homepage renders, before any image has loaded

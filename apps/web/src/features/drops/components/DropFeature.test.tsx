@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { DropSummary } from '../types.ts';
 import { DropFeature } from './DropFeature.tsx';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 const LIVE: DropSummary = {
   slug: 'collection-001-cost-of-living',
@@ -33,8 +35,9 @@ describe('storefront-homepage: Drop feature', () => {
     const time = container.querySelector('time')!;
     expect(time.getAttribute('dateTime')).toBe('2026-11-20T03:00:00.000Z');
     expect(time.textContent).toBe('20 November 2026');
-    const countdown = screen.getByRole('timer', { name: 'Countdown to release' });
-    expect(countdown.textContent).toBe('');
+    const countdown = screen.getByRole('timer', { name: 'Time until release' });
+    expect(countdown.textContent).toContain('Releases in');
+    expect(countdown.querySelector('[data-unit="days"]')).not.toBeNull();
     expect(screen.queryByRole('link')).toBeNull();
   });
 });

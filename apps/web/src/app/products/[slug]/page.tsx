@@ -41,6 +41,7 @@ export default async function ProductPage({ params, searchParams }: Props) {
       colorSlug={selection.color.slug}
       sizeCode={selection.size?.code ?? null}
       soldOut={selection.availability === 'SOLD_OUT'}
+      releaseAt={product.releaseAt}
       returnTo={selectionHref(product.slug, selection.color.slug, selection.size?.code)}
       {...(failure ? { failure } : {})}
     />

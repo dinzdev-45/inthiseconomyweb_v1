@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import type { DropSummary } from '@/features/drops';
+
 import { HOME_CONTENT } from '../content.ts';
 import { HomeSections } from './HomeSections.tsx';
 
@@ -24,6 +26,15 @@ const ALL = [
   'Newsletter',
 ];
 
+const LIVE: DropSummary = {
+  slug: 'collection-001-cost-of-living',
+  collection: 'COLLECTION 001',
+  title: 'COST OF LIVING',
+  status: 'live',
+  startsAt: '2026-10-01T03:00:00.000Z',
+  image: null,
+};
+
 describe('storefront-homepage: Drop feature', () => {
   it('No drop to feature', () => {
     const { container } = render(<HomeSections content={{ ...HOME_CONTENT, drop: null }} />);
@@ -36,7 +47,7 @@ describe('storefront-homepage: Drop feature', () => {
 
 describe('HomeSections', () => {
   it('renders every section in spec order from the content', () => {
-    const { container } = render(<HomeSections content={HOME_CONTENT} />);
+    const { container } = render(<HomeSections content={{ ...HOME_CONTENT, drop: LIVE }} />);
     expect(sectionLabels(container)).toEqual(ALL);
     expect(container.querySelectorAll('h1')).toHaveLength(1);
   });

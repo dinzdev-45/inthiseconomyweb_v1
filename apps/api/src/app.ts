@@ -23,10 +23,16 @@ import { createVariantService } from './modules/catalog/variants/service.ts';
 import { createReferenceRepository } from './modules/catalog/reference/repository.ts';
 import { referenceRoutes } from './modules/catalog/reference/routes.ts';
 import { createReferenceService } from './modules/catalog/reference/service.ts';
+import { createDropRepository } from './modules/drops/repository.ts';
+import { dropRoutes } from './modules/drops/routes.ts';
+import { createDropService } from './modules/drops/service.ts';
 import { createOrderRepository } from './modules/orders/repository.ts';
 import { orderRoutes } from './modules/orders/routes.ts';
 import { createOrderService } from './modules/orders/service.ts';
 import { createOrderSweeper, type OrderSweeper } from './modules/orders/sweeper.ts';
+import { createStoreDropRepository } from './modules/store-drops/repository.ts';
+import { storeDropRoutes } from './modules/store-drops/routes.ts';
+import { createStoreDropService } from './modules/store-drops/service.ts';
 import { createStoreCartRepository } from './modules/store-cart/repository.ts';
 import { storeCartRoutes } from './modules/store-cart/routes.ts';
 import { createStoreCartService } from './modules/store-cart/service.ts';
@@ -120,7 +126,10 @@ export async function buildApp({
     clock,
     storeCurrency: env.STORE_CURRENCY,
   });
-  const storeCatalog = createStoreCatalogService({ repo: createStoreCatalogRepository(app.db) });
+  const storeCatalog = createStoreCatalogService({
+    repo: createStoreCatalogRepository(app.db),
+    clock,
+  });
   const storeCartRepository = createStoreCartRepository(app.db);
   const storeCarts = createStoreCartService({
     repo: storeCartRepository,
@@ -142,6 +151,13 @@ export async function buildApp({
   app.decorate('orderSweeper', orderSweeper);
   app.addHook('onClose', async () => orderSweeper.stop());
 
+  const drops = createDropService({ repo: createDropRepository(app.db), clock });
+  const storeDrops = createStoreDropService({
+    repo: createStoreDropRepository(app.db),
+    catalog: storeCatalog,
+    clock,
+  });
+
   await app.register(healthRoutes);
   await registerZones(app, {
     env,
@@ -152,6 +168,7 @@ export async function buildApp({
       store: [
         async (store) => store.register(storeCatalogRoutes, { catalog: storeCatalog }),
         async (store) => store.register(storeCartRoutes, { carts: storeCarts }),
+        async (store) => store.register(storeDropRoutes, { drops: storeDrops }),
         async (store) => store.register(orderRoutes, { orders }),
         ...(routes.store ?? []),
       ],
@@ -167,6 +184,7 @@ export async function buildApp({
         async (admin) => admin.register(productRoutes, { products }),
         async (admin) => admin.register(variantRoutes, { variants }),
         async (admin) => admin.register(imageRoutes, { images }),
+        async (admin) => admin.register(dropRoutes, { drops }),
         async (admin) =>
           admin.register(catalogSettingsRoutes, { storeCurrency: env.STORE_CURRENCY }),
         ...(routes.admin ?? []),

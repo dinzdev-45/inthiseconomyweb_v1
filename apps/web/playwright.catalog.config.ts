@@ -4,7 +4,8 @@ import { CATALOG_E2E } from './e2e-catalog/config.ts';
 
 /**
  * Storefront catalog E2E (storefront-catalog): the production build against a real API on a
- * seeded `ite_e2e_store` database (recreated per run by global setup). The no-API suite in
+ * seeded `ite_e2e_store` database (recreated per run by e2e-catalog/reset-db.ts, before the API
+ * starts and the storefront builds). The no-API suite in
  * playwright.config.ts stays separate and keeps proving the homepage needs no API.
  */
 export default defineConfig({
@@ -12,7 +13,6 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   reporter: [['list']],
-  globalSetup: './e2e-catalog/global-setup.ts',
   use: {
     baseURL: CATALOG_E2E.webOrigin,
     // Local runs use the installed Google Chrome; CI installs Playwright's Chromium instead.
@@ -21,7 +21,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'node src/server.ts',
+      command: 'node ../web/e2e-catalog/reset-db.ts && node src/server.ts',
       cwd: '../api',
       url: `${CATALOG_E2E.apiUrl}/health`,
       reuseExistingServer: false,

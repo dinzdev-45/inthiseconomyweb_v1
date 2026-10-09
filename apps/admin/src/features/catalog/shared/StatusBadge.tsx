@@ -1,14 +1,15 @@
-import type { CategoryStatus, ProductStatus, VariantStatus } from '@ite/contracts';
+import type { CategoryStatus, DropStatus, ProductStatus, VariantStatus } from '@ite/contracts';
 
 import { Badge } from '@/components/ui';
 
-type Status = ProductStatus | VariantStatus | CategoryStatus;
+type Status = ProductStatus | VariantStatus | CategoryStatus | DropStatus;
 
 const LABEL: Record<Status, string> = {
   DRAFT: 'Draft',
   ACTIVE: 'Active',
   INACTIVE: 'Inactive',
   ARCHIVED: 'Archived',
+  PUBLISHED: 'Published',
 };
 
 const TONE: Record<Status, 'neutral' | 'strong' | 'muted'> = {
@@ -16,6 +17,7 @@ const TONE: Record<Status, 'neutral' | 'strong' | 'muted'> = {
   ACTIVE: 'strong',
   INACTIVE: 'muted',
   ARCHIVED: 'muted',
+  PUBLISHED: 'strong',
 };
 
 /** A lifecycle status as text (colour is only an extra cue). */

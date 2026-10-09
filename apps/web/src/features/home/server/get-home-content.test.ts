@@ -1,16 +1,42 @@
 import { Money } from '@ite/contracts';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { DropSummary } from '@/features/drops';
 
 vi.mock('server-only', () => ({}));
+const getDropsOverview = vi.fn();
+vi.mock('@/features/drops/server/drops', () => ({ getDropsOverview }));
 const { getHomeContent } = await import('./get-home-content.ts');
 
-afterEach(() => vi.restoreAllMocks());
+const drop = (slug: string, status: DropSummary['status'], startsAt: string): DropSummary => ({
+  slug,
+  collection: 'COLLECTION',
+  title: slug.toUpperCase(),
+  status,
+  startsAt,
+  image: null,
+});
+const LIVE = drop('cost-of-living', 'live', '2026-10-01T03:00:00.000Z');
+const NEXT = drop('overtime', 'upcoming', '2026-11-20T03:00:00.000Z');
+const LATER = drop('night-shift', 'upcoming', '2027-01-20T03:00:00.000Z');
+const overview = (upcoming: DropSummary[], current: DropSummary | null) => ({
+  upcoming,
+  current,
+  archive: [],
+});
+
+beforeEach(() => getDropsOverview.mockResolvedValue(overview([], LIVE)));
+afterEach(() => {
+  vi.restoreAllMocks();
+  getDropsOverview.mockReset();
+});
 
 describe('getHomeContent', () => {
-  it('returns the placeholder content without calling the API', async () => {
+  it('reads only the drop from the API (cached for 300 s); the rest is placeholder content', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
     const content = await getHomeContent();
     expect(fetchSpy).not.toHaveBeenCalled();
+    expect(getDropsOverview).toHaveBeenCalledExactlyOnceWith(300);
     expect(content.featured.products).toHaveLength(4);
     expect(content.look.items.length).toBeGreaterThanOrEqual(2);
     expect(content.look.items.length).toBeLessThanOrEqual(3);
@@ -29,14 +55,19 @@ describe('getHomeContent', () => {
     expect(manifesto.cta.href).toBe('/story');
   });
 
-  it('features the live COLLECTION 001 / COST OF LIVING drop', async () => {
-    const { drop } = await getHomeContent();
-    expect(drop).toMatchObject({
-      collection: 'COLLECTION 001',
-      title: 'COST OF LIVING',
-      status: 'live',
-    });
-    expect(Number.isNaN(Date.parse(drop!.startsAt))).toBe(false);
+  it('features the next upcoming drop, or else the current live drop', async () => {
+    getDropsOverview.mockResolvedValueOnce(overview([NEXT, LATER], LIVE));
+    expect((await getHomeContent()).drop).toEqual(NEXT);
+    expect((await getHomeContent()).drop).toEqual(LIVE);
+  });
+
+  it('features no drop when none is published or the API fails', async () => {
+    getDropsOverview.mockResolvedValueOnce(overview([], null));
+    expect((await getHomeContent()).drop).toBeNull();
+    getDropsOverview.mockRejectedValueOnce(new Error('fetch failed'));
+    const content = await getHomeContent();
+    expect(content.drop).toBeNull();
+    expect(content.hero.headline).toBe('IN THIS ECONOMY');
   });
 
   it('uses valid shared Money values and URL-safe, unique slugs', async () => {

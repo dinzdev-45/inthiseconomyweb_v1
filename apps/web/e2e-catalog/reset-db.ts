@@ -5,8 +5,13 @@ import { CATALOG_E2E } from './config.ts';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 
-/** A fresh `ite_e2e_store` database: migrated, dev catalog seeded, then the E2E fixtures. */
-export default function globalSetup() {
+/**
+ * A fresh `ite_e2e_store` database: migrated, dev catalog seeded, then the E2E fixtures. Run as
+ * a script by the API web server's command, before the API starts and before the storefront
+ * builds (Playwright starts web servers before any `globalSetup`, and the build prerenders pages
+ * that read the API, such as the homepage's featured drop).
+ */
+function resetDatabase() {
   const psql = (...args: string[]) => execFileSync('psql', args, { stdio: 'pipe' });
   psql(CATALOG_E2E.maintenanceUrl, '-qc', 'DROP DATABASE IF EXISTS ite_e2e_store WITH (FORCE)');
   psql(CATALOG_E2E.maintenanceUrl, '-qc', 'CREATE DATABASE ite_e2e_store');
@@ -36,3 +41,5 @@ export default function globalSetup() {
     fileURLToPath(new URL('./fixtures.sql', import.meta.url)),
   );
 }
+
+resetDatabase();

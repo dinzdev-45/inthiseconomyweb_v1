@@ -42,6 +42,7 @@ export function toProductSummary(
     price: min,
     ...(max.amount !== min.amount ? { priceMax: max } : {}),
     availability: product.availability,
+    ...(product.releaseAt ? { releaseAt: product.releaseAt } : {}),
     image: toMedia(product.image, allowedHosts),
     hoverImage: toMedia(product.secondaryImage, allowedHosts),
   };

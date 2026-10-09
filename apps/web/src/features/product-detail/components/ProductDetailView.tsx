@@ -38,7 +38,7 @@ export function ProductDetailView({
           <h1 className="mt-2 text-title font-black uppercase font-stretch-expanded break-words">
             {product.name}
           </h1>
-          <PriceBlock selection={selection} />
+          <PriceBlock selection={selection} releaseAt={product.releaseAt} drop={product.drop} />
           <ColorOptions colors={selection.colors} selected={selection.color} />
           <SizeOptions
             sizes={selection.sizes}
