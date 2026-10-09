@@ -24,6 +24,7 @@ The store zone SHALL provide cart endpoints under `/api/v1/store/cart`. `POST /a
 ### Requirement: Add to cart
 `POST /api/v1/store/cart/items` SHALL add a variant identified by `productSlug`, `colorSlug`, and `sizeCode`, with a `quantity` from 1 to 10 (default 1). The body SHALL be strict.
 - **Sellable variants only:** the product SHALL be `ACTIVE` and the variant `ACTIVE`. Otherwise the API SHALL respond `409` with code `VARIANT_UNAVAILABLE`, the same for a product or variant that does not exist.
+- **Released products only:** an unreleased product (see `drops-management`) SHALL be refused with `409` and code `NOT_RELEASED`, whatever its drop's status.
 - **Same variant again:** adding a variant already in the cart SHALL increase that line's quantity rather than add a second line.
 - **Quantity limit:** a line's quantity SHALL NOT exceed 10. Otherwise `409` with code `QUANTITY_LIMIT`.
 - **Stock:** a line's quantity SHALL NOT exceed the variant's stock. Otherwise `409` with code `INSUFFICIENT_STOCK`, without stating the stock.
@@ -45,6 +46,10 @@ The store zone SHALL provide cart endpoints under `/api/v1/store/cart`. `POST /a
 #### Scenario: Quantity and stock limits
 - **WHEN** a line would exceed 10, or exceed the variant's stock of 4 (for example by adding 5), or a sold-out variant is added
 - **THEN** the API responds `409` with `QUANTITY_LIMIT` for the first and `INSUFFICIENT_STOCK` for the others, the body does not state the stock, and the cart is unchanged
+
+#### Scenario: Unreleased product cannot be added
+- **WHEN** a customer adds a variant of an active product whose drop releases tomorrow
+- **THEN** the API responds `409` with code `NOT_RELEASED` and the cart is unchanged, and after the release time the same add succeeds
 
 ### Requirement: Change and remove cart lines
 `PATCH /api/v1/store/cart/items/{lineId}` SHALL set a line's quantity (1 to 10), under the same stock and quantity rules as adding. `DELETE /api/v1/store/cart/items/{lineId}` SHALL remove a line. Both SHALL respond with the updated cart. A line id that does not belong to the token's cart SHALL get `404` with code `NOT_FOUND`. Lowering a quantity, or removing a line, SHALL always be allowed, even when the variant is no longer sellable or its stock is lower.
@@ -71,7 +76,7 @@ The store zone SHALL provide cart endpoints under `/api/v1/store/cart`. `POST /a
   - `quantity`
   - `unitPrice`: the variant's current effective price
   - `lineTotal`
-  - `status`: `AVAILABLE`, `INSUFFICIENT_STOCK` (stock is now below the quantity), or `UNAVAILABLE` (the product or variant is no longer sellable)
+  - `status`: `AVAILABLE`, `INSUFFICIENT_STOCK` (stock is now below the quantity), or `UNAVAILABLE` (the product or variant is no longer sellable, or the product is unreleased)
 - `itemCount`: the sum of quantities of `AVAILABLE` lines
 - `subtotal`: the sum of their line totals, in the store currency
 
@@ -88,3 +93,7 @@ Prices SHALL always be computed when the cart is read, never stored or taken fro
 #### Scenario: Customer-safe cart fields
 - **WHEN** a customer reads a cart with lines
 - **THEN** the response matches the published cart schema exactly, with no stock quantity, SKU, variant id, product id, or attribution field
+
+#### Scenario: Line that became unreleased
+- **WHEN** a product in the cart is added to a drop releasing tomorrow
+- **THEN** its line has status `UNAVAILABLE` and does not count toward `itemCount` or `subtotal`

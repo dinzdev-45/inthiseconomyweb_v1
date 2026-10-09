@@ -76,6 +76,7 @@ The page SHALL show:
 - **With a size selected:** the selected variant's price and its availability ("In stock" or "Sold out").
 - **Without a size selected:** the selected color's price, or "From" its lowest price when its variants' prices differ.
 - **A sold-out product:** "Sold out" near the price when every variant is sold out.
+- **An unreleased product:** "Releases <date and time in WIB>" near the price, with a link to its drop, instead of the availability.
 
 Prices SHALL be formatted in their currency. Availability SHALL be stated in text, never by color alone, and stock quantities SHALL NOT be shown.
 
@@ -90,6 +91,10 @@ Prices SHALL be formatted in their currency. Availability SHALL be stated in tex
 #### Scenario: Sold-out product
 - **WHEN** every variant of a product is sold out
 - **THEN** the page says "Sold out" near the price, and every size option says "Sold out"
+
+#### Scenario: Unreleased product page
+- **WHEN** a customer opens the page of a product whose published drop releases tomorrow
+- **THEN** the page shows its price and "Releases" with tomorrow's date and time in WIB, links to the drop, and shows no "In stock" or "Sold out"
 
 ### Requirement: Size guide
 The page SHALL offer a "Size guide", closed by default, that opens and closes with a pointer and the keyboard. It SHALL show a measurement table for the product's sizing:
